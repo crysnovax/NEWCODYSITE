@@ -1,0 +1,11 @@
+name = "plogme-data"
+main = "plogme-data-worker.js"
+compatibility_date = "2026-09-11"
+
+[[d1_databases]]
+binding = "PLOGME_DB"
+database_name = "plogme-platform"
+database_id = "627154bc-8048-4071-b45a-e39e3c79c6d0"
+
+[vars]
+# Set PLOGME_DATA_SECRET with `wrangler secret put PLOGME_DATA_SECRET`.

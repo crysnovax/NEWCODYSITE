@@ -1,0 +1,234 @@
+import express from 'express';
+import fs from 'fs';
+import pino from 'pino';
+import { makeWASocket, useMultiFileAuthState, makeCacheableSignalKeyStore, Browsers, jidNormalizedUser, fetchLatestBaileysVersion } from '@crysnovax/baileys';
+import { delay } from '@crysnovax/baileys';
+import QRCode from 'qrcode';
+import { uploadSession } from './id.js';
+
+const router = express.Router();
+
+function removeFile(FilePath) {
+    try {
+        if (!fs.existsSync(FilePath)) return false;
+        fs.rmSync(FilePath, { recursive: true, force: true });
+        return true;
+    } catch (e) {
+        console.error('Error removing file:', e);
+        return false;
+    }
+}
+
+const retryAttempts = new Map();
+
+router.get('/', async (req, res) => {
+    const sessionId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const dirs = `./qr_sessions/session_${sessionId}`;
+
+    if (!fs.existsSync('./qr_sessions')) {
+        fs.mkdirSync('./qr_sessions', { recursive: true });
+    }
+
+    retryAttempts.set(sessionId, 0);
+
+    async function initiateSession(isRetry = false) {
+        if (!fs.existsSync(dirs)) fs.mkdirSync(dirs, { recursive: true });
+
+        const { state, saveCreds } = await useMultiFileAuthState(dirs);
+
+        try {
+            const { version, isLatest } = await fetchLatestBaileysVersion();
+
+            let qrGenerated = false;
+            let responseSent = false;
+            let messagesSent = false;
+
+            const handleQRCode = async (qr) => {
+                if (qrGenerated || responseSent) return;
+
+                qrGenerated = true;
+                console.log('📱 QR Code Generated!');
+
+                try {
+                    const qrDataURL = await QRCode.toDataURL(qr, {
+                        errorCorrectionLevel: 'M',
+                        type: 'image/png',
+                        quality: 0.92,
+                        margin: 1,
+                        color: { dark: '#000000', light: '#FFFFFF' }
+                    });
+
+                    if (!responseSent) {
+                        responseSent = true;
+                        await res.send({ 
+                            qr: qrDataURL, 
+                            message: 'QR Code Generated! Scan it with your WhatsApp app.',
+                            instructions: [
+                                '1. Open WhatsApp on your phone',
+                                '2. Go to Settings > Linked Devices',
+                                '3. Tap "Link a Device"',
+                                '4. Scan the QR code above'
+                            ]
+                        });
+                    }
+                } catch (qrError) {
+                    console.error('Error generating QR code:', qrError);
+                    if (!responseSent) {
+                        responseSent = true;
+                        res.status(500).send({ code: 'Failed to generate QR code' });
+                    }
+                }
+            };
+
+            const socketConfig = {
+                version,
+                logger: pino({ level: 'silent' }),
+                browser: Browsers.windows('Chrome'),
+                auth: {
+                    creds: state.creds,
+                    keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
+                },
+                markOnlineOnConnect: false,
+                generateHighQualityLinkPreview: false,
+                defaultQueryTimeoutMs: 30000,
+                connectTimeoutMs: 30000,
+                keepAliveIntervalMs: 30000,
+                retryRequestDelayMs: 250,
+                maxRetries: 5,
+            };
+
+            let sock = makeWASocket(socketConfig);
+
+            const handleConnectionUpdate = async (update) => {
+                const { connection, lastDisconnect, qr } = update;
+
+                if (qr && !qrGenerated) {
+                    await handleQRCode(qr);
+                }
+
+                if (connection === 'open' && !messagesSent) {
+                    messagesSent = true;
+                    console.log('✅ Connected successfully!');
+                    
+                    retryAttempts.delete(sessionId);
+
+                    try {
+                        const sessionCody = fs.readFileSync(dirs + '/creds.json');
+                        const sessionData = sessionCody.toString('utf8');
+                        const sessionBase64 = Buffer.from(sessionCody).toString('base64');
+                        
+                        const userJid = Object.keys(sock.authState.creds.me || {}).length > 0 
+                            ? jidNormalizedUser(sock.authState.creds.me.id) 
+                            : null;
+
+                        if (userJid) {
+                            const phoneNumber = userJid.split('@')[0];
+                            
+                            const uploadResult = await uploadSession(sessionData, phoneNumber);
+                            
+                            let sessionIdText = '';
+                            let copyIdText = '';
+
+                            if (uploadResult) {
+                                sessionIdText = uploadResult.fullId;
+                                copyIdText = uploadResult.fullId;
+                                console.log("📦 Short ID:", uploadResult.shortId);
+                            } else {
+                                sessionIdText = `CODY_AI!${sessionBase64}`;
+                                copyIdText = `CODY_AI!${sessionBase64}`;
+                                console.log("🔐 Base64 session");
+                            }
+
+                            // ONE message: image + caption + copy button
+                            await sock.sendMessage(userJid, {
+                                image: { url: 'https://cdn.crysnovax.link/files/1778949575159-68cdc357-92f3-4065-a62e-0385710bb260.jpeg' },
+                                caption: `╭─❍ *C⚉DY AI* 🜲\n│\n│ ✓ *Connection Successful!*\n│\n│ 👤 *Your Number:* 📱 +${phoneNumber}\n│\n│ 🔑 *Session ID:* ${sessionIdText}\n│\n│ 💬 *Quick Setup:*\n│ ➊ Tap "Copy Session ID" below\n│ ➋ Add to your .env file\n│ ➌ Run: node index.js\n│\n│ 🎬 *Full Guide:* youtu.be/7TJ400demag?si=Xb8QwdwuVlTUOu7U\n│\n│ 💫 *Channel:* whatsapp.com/channel/0029Vb6pe77K0IBn48HLKb38\n│\n│ ✑ *Community:* chat.whatsapp.com/Besbj8VIle1GwxKKZv1lax\n│\n│ 🔖 *GitHub:* github.com/crysnovax\n│\n╰──────────────────\n\n🏷️ *Do not share this file with anybody!*\n\n©2025 CODY AI • crysnovax`,
+                                nativeFlow: [{
+                                    text: '📋 Copy Session ID',
+                                    copy: copyIdText
+                                }]
+                            });
+                            console.log("🎬 Tutorial with Session ID sent");
+                        } else {
+                            console.log("❌ Could not determine user JID");
+                        }
+                    } catch (error) {
+                        console.error("Error sending messages:", error);
+                    }
+
+                    setTimeout(async () => {
+                        console.log('🧹 Cleaning up session...');
+                        removeFile(dirs);
+                        if (sock.ws) {
+                            sock.ws.close();
+                        }
+                    }, 15000);
+                }
+
+                if (connection === 'close') {
+                    const statusCode = lastDisconnect?.error?.output?.statusCode;
+                    const currentRetries = retryAttempts.get(sessionId) || 0;
+
+                    if (statusCode === 401) {
+                        console.log('🔐 Logged out - need new QR code');
+                        removeFile(dirs);
+                        retryAttempts.delete(sessionId);
+                    } else if ((statusCode === 515 || statusCode === 503) && currentRetries < 1 && !messagesSent && !responseSent) {
+                        const newRetryCount = currentRetries + 1;
+                        retryAttempts.set(sessionId, newRetryCount);
+                        console.log(`🔁 Retry attempt ${newRetryCount}/1 – restarting...`);
+                        setTimeout(() => initiateSession(true), 2000);
+                    } else {
+                        console.log('📡 Connection closed – stopping');
+                        retryAttempts.delete(sessionId);
+                        if (!responseSent && !messagesSent) {
+                            res.status(503).send({ code: 'Connection failed. Please refresh.' });
+                        }
+                    }
+                }
+            };
+
+            sock.ev.on('connection.update', handleConnectionUpdate);
+            sock.ev.on('creds.update', saveCreds);
+
+            setTimeout(() => {
+                if (!responseSent && !messagesSent) {
+                    console.log('⏰ Timeout – no QR generated');
+                    if (!res.headersSent) {
+                        res.status(408).send({ code: 'QR generation timeout' });
+                    }
+                    removeFile(dirs);
+                    retryAttempts.delete(sessionId);
+                }
+            }, 60000);
+
+        } catch (err) {
+            console.error('Error initializing session:', err);
+            if (!res.headersSent) {
+                res.status(503).send({ code: 'Service Unavailable' });
+            }
+            removeFile(dirs);
+            retryAttempts.delete(sessionId);
+        }
+    }
+
+    await initiateSession();
+});
+
+process.on('uncaughtException', (err) => {
+    let e = String(err);
+    if (e.includes("conflict")) return;
+    if (e.includes("not-authorized")) return;
+    if (e.includes("Socket connection timeout")) return;
+    if (e.includes("rate-overlimit")) return;
+    if (e.includes("Connection Closed")) return;
+    if (e.includes("Timed Out")) return;
+    if (e.includes("Value not found")) return;
+    if (e.includes("Stream Errored")) return;
+    if (e.includes("Stream Errored (restart required)")) return;
+    if (e.includes("statusCode: 515")) return;
+    if (e.includes("statusCode: 503")) return;
+    console.log('Caught exception: ', err);
+});
+
+export default router;

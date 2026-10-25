@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CODY AI — Deploy Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:         #06060d;
+      --surf:       #0d0d1a;
+      --surf2:      #131320;
+      --surf3:      #1a1a2e;
+      --border:     rgba(255,255,255,0.06);
+      --border2:    rgba(255,255,255,0.11);
+      --green:      #00ff88;
+      --green-dim:  rgba(0,255,136,0.12);
+      --purple:     #8b5cf6;
+      --purple-dim: rgba(139,92,246,0.13);
+      --text:       #e8e8f8;
+      --muted:      rgba(232,232,248,0.42);
+      --code-bg:    #08080f;
+      --danger:     #ff4757;
+      --r:          14px;
+      --rs:          8px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Background Layers ── */
+    .bg-glow {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 55% at 15% 5%,  rgba(0,255,136,0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 55% 50% at 85% 85%,  rgba(139,92,246,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 50% 50%,  rgba(0,255,136,0.02) 0%, transparent 70%);
+    }
+
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
+      background-size: 44px 44px;
+    }
+
+    /* ── Layout ── */
+    .wrapper {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 36px 16px 52px;
+    }
+
+    /* ── Header ── */
+    .site-header {
+      width: 100%; max-width: 660px;
+      text-align: center; margin-bottom: 28px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .logo-ring {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 74px; height: 74px; border-radius: 22px;
+      background: var(--surf2); position: relative;
+      margin-bottom: 18px;
+      box-shadow: 0 0 40px rgba(0,255,136,0.09), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .logo-ring::before {
+      content: '';
+      position: absolute; inset: -1px; border-radius: 23px;
+      background: linear-gradient(135deg, rgba(0,255,136,0.5), rgba(139,92,246,0.4), transparent 60%);
+      z-index: -1;
+    }
+
+    .logo-ring .icon { font-size: 30px; line-height: 1; }
+
+    .site-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 42px; font-weight: 800; letter-spacing: -1.5px;
+      background: linear-gradient(135deg, #ffffff 25%, #a0ffd6 65%, var(--green));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      line-height: 1; margin-bottom: 4px;
+    }
+
+    .version-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 20px;
+      background: var(--green-dim); border: 1px solid rgba(0,255,136,0.25);
+      font-family: 'JetBrains Mono', monospace; font-size: 10px;
+      color: var(--green); letter-spacing: 0.05em; margin-left: 6px;
+      vertical-align: middle; position: relative; top: -4px;
+    }
+
+    .site-tagline {
+      font-size: 14px; color: var(--muted); margin-bottom: 22px; letter-spacing: 0.02em;
+    }
+
+    .social-row { display: flex; justify-content: center; gap: 10px; }
+
+    .soc {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      text-decoration: none; font-size: 15px;
+      border: 1px solid var(--border2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .soc:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+    .soc.yt  { background: rgba(255,0,0,0.12);     color: #ff5555; }
+    .soc.tg  { background: rgba(0,136,204,0.12);   color: #29b6e8; }
+    .soc.wa  { background: rgba(37,211,102,0.12);  color: #25d366; }
+    .soc.gh  { background: rgba(200,200,200,0.07); color: #c9d1d9; }
+
+    /* ── Card ── */
+    .main-card {
+      width: 100%; max-width: 660px;
+      background: var(--surf);
+      border: 1px solid var(--border2);
+      border-radius: 22px; overflow: hidden;
+      box-shadow: 0 28px 90px rgba(0,0,0,0.55);
+      animation: fadeUp 0.7s ease 0.1s both;
+    }
+
+    /* ── Tab Nav ── */
+    .tab-nav {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      background: var(--surf2); border-bottom: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      padding: 15px 8px; background: none; border: none;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.025); }
+    .tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+    /* ── Tab Panels ── */
+    .tab-panel { display: none; padding: 26px; animation: fadeIn 0.22s ease; }
+    .tab-panel.active { display: block; }
+
+    /* ── Labels ── */
+    .sec-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--green); margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+    }
+    .sec-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, rgba(0,255,136,0.25), transparent);
+    }
+
+    /* ── Mode Toggle ── */
+    .mode-toggle {
+      display: flex; gap: 4px; padding: 4px;
+      background: var(--surf2); border: 1px solid var(--border2);
+      border-radius: var(--rs); margin-bottom: 20px;
+    }
+    .mode-btn {
+      flex: 1; padding: 9px; border: none; border-radius: 6px; background: none;
+      color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px;
+      font-weight: 500; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .mode-btn.active {
+      background: var(--surf3); color: var(--text);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    /* ── Fields ── */
+    .field { margin-bottom: 14px; }
+
+    .field-label {
+      display: block; font-size: 12px; font-weight: 500;
+      color: var(--muted); margin-bottom: 6px; letter-spacing: 0.02em;
+    }
+    .field-label .req { color: var(--danger); margin-left: 2px; }
+
+    .field-input {
+      width: 100%; padding: 11px 14px;
+      background: var(--surf2); border: 1px solid var(--border2);
+      border-radius: var(--rs); color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field-input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px var(--green-dim);
+    }
+    .field-input::placeholder { color: rgba(232,232,248,0.18); }
+    .field-input.mono { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; }
+
+    select.field-input {
+      cursor: pointer; -webkit-appearance: none; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='rgba(232,232,248,0.35)' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 13px center;
+      padding-right: 34px;
+    }
+    select.field-input option { background: var(--surf3); }
+
+    .format-choice {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      padding: 5px; background: var(--surf2); border: 1px solid var(--border2);
+      border-radius: var(--rs); margin-bottom: 7px;
+    }
+    .format-option {
+      border: 1px solid transparent; border-radius: calc(var(--rs) - 3px);
+      background: transparent; color: var(--muted); cursor: pointer;
+      padding: 10px 9px; text-align: left; font: inherit;
+      transition: background .2s, color .2s, border-color .2s, box-shadow .2s;
+    }
+    .format-option strong { display:block; color: inherit; font-size: 12.5px; font-weight: 600; }
+    .format-option small { display:block; color: rgba(232,232,248,.45); font-size: 10px; margin-top: 3px; }
+    .format-option.active {
+      color: var(--text); background: var(--green-dim); border-color: var(--green);
+      box-shadow: 0 0 18px rgba(0,255,153,.10);
+    }
+    .format-option.active small { color: rgba(232,232,248,.7); }
+    .format-option:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── Toggle Switch ── */
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 14px; background: var(--surf2);
+      border: 1px solid var(--border); border-radius: var(--rs); margin-bottom: 10px;
+    }
+    .tl-label { font-size: 13px; }
+    .tl-label small { display: block; font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+    .switch { position: relative; width: 38px; height: 22px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; inset: 0;
+      background: var(--surf3); border: 1px solid var(--border2);
+      border-radius: 12px; transition: 0.2s;
+    }
+    .slider::before {
+      content: ''; position: absolute;
+      width: 16px; height: 16px; left: 2px; top: 2px;
+      background: rgba(232,232,248,0.3); border-radius: 50%; transition: 0.2s;
+    }
+    .switch input:checked + .slider { background: var(--green-dim); border-color: var(--green); }
+    .switch input:checked + .slider::before { transform: translateX(16px); background: var(--green); }
+
+    /* ── Advanced toggle ── */
+    .adv-btn {
+      background: none;
+      border: 1px dashed rgba(255,255,255,0.1); border-radius: var(--rs);
+      color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px;
+      width: 100%; padding: 9px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      margin-bottom: 14px; transition: color 0.2s, border-color 0.2s;
+    }
+    .adv-btn:hover { color: var(--text); border-color: var(--border2); }
+    .adv-chevron { margin-left: auto; font-size: 10px; transition: transform 0.2s; }
+    .adv-section { display: none; }
+    .adv-section.open { display: block; }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      width: 100%; padding: 13px;
+      background: var(--green); border: none; border-radius: var(--rs);
+      color: #050510; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.04em;
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      margin-bottom: 16px; transition: all 0.2s;
+    }
+    .btn-primary:hover { box-shadow: 0 0 28px rgba(0,255,136,0.28); transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-sm {
+      padding: 6px 13px; background: var(--surf3); border: 1px solid var(--border2);
+      border-radius: var(--rs); color: var(--muted);
+      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-sm:hover { border-color: rgba(0,255,136,0.4); color: var(--green); }
+
+    /* ── Pair Code Display ── */
+    .code-display {
+      background: var(--surf2); border: 1px solid var(--border2); border-radius: var(--rs);
+      padding: 16px; min-height: 58px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 14px;
+      font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 500;
+      letter-spacing: 0.2em;
+    }
+    .ph { color: var(--muted); font-size: 13px; font-family: 'DM Sans'; letter-spacing: 0; font-weight: 400; }
+    .ok { color: var(--green); }
+    .err { color: var(--danger); font-size: 13px; font-family: 'DM Sans'; letter-spacing: 0; font-weight: 400; }
+
+    .qr-display {
+      background: var(--surf2); border: 1px solid var(--border2); border-radius: var(--rs);
+      padding: 24px; text-align: center; margin-bottom: 14px; display: none;
+    }
+    .qr-display img { max-width: 220px; border-radius: 10px; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto; }
+    .qr-hint { font-size: 12px; color: var(--muted); }
+    .autofill-note { font-size: 12px; color: var(--green); margin-bottom: 14px; display: none; }
+
+    .spinner { display: none; text-align: center; padding: 14px; color: var(--green); }
+    .spinner i { animation: spin 0.9s linear infinite; font-size: 20px; }
+
+    /* ── Code Window ── */
+    .code-window {
+      background: var(--code-bg); border: 1px solid var(--border2); border-radius: var(--r);
+      overflow: hidden; margin-top: 16px;
+    }
+    .code-titlebar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; background: var(--surf2); border-bottom: 1px solid var(--border);
+    }
+    .code-dots { display: flex; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .d-r { background: #ff5f56; } .d-y { background: #ffbd2e; } .d-g { background: #27c93f; }
+    .code-fname { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+    .code-acts { display: flex; gap: 7px; }
+
+    .code-body { max-height: 400px; overflow-y: auto; padding: 18px; }
+    .code-body::-webkit-scrollbar { width: 5px; }
+    .code-body::-webkit-scrollbar-track { background: transparent; }
+    .code-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+    .code-body pre {
+      font-family: 'JetBrains Mono', monospace; font-size: 12px;
+      line-height: 1.75; color: #b0c4de; white-space: pre; overflow-x: auto;
+    }
+    .code-placeholder {
+      text-align: center; padding: 44px 20px; color: var(--muted); font-size: 13px;
+    }
+    .code-placeholder i { font-size: 30px; margin-bottom: 12px; display: block; opacity: 0.3; }
+
+    .run-hint {
+      display: none; align-items: center; gap: 10px;
+      background: var(--green-dim); border: 1px solid rgba(0,255,136,0.18);
+      border-radius: var(--rs); padding: 10px 14px; margin-top: 12px;
+    }
+    .run-hint i { color: var(--green); flex-shrink: 0; }
+    .run-hint code { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--green); }
+    .run-hint small { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+    /* ── Deploy Guide ── */
+    .platform-tabs { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
+    .p-tab {
+      padding: 8px 16px; background: var(--surf2); border: 1px solid var(--border2);
+      border-radius: 20px; color: var(--muted);
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+      cursor: pointer; display: flex; align-items: center; gap: 6px;
+      transition: all 0.2s;
+    }
+    .p-tab:hover { color: var(--text); }
+    .p-tab.active { background: var(--green-dim); border-color: rgba(0,255,136,0.35); color: var(--green); }
+
+    .p-panel { display: none; }
+    .p-panel.active { display: block; }
+
+    .steps { list-style: none; }
+    .step { display: flex; gap: 14px; margin-bottom: 22px; }
+    .step-n {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; margin-top: 1px;
+      background: var(--surf3); border: 1px solid rgba(0,255,136,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; color: var(--green);
+    }
+    .step-body {}
+    .step-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .step-desc { font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 8px; }
+    .step-desc code { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #89b4fa; }
+
+    .cmd {
+      background: var(--code-bg); border: 1px solid var(--border2); border-radius: var(--rs);
+      padding: 9px 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 7px;
+    }
+    .cmd code { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #89b4fa; flex: 1; word-break: break-all; }
+    .cmd-cp {
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 12px; padding: 3px 7px; border-radius: 4px; flex-shrink: 0; transition: color 0.2s;
+    }
+    .cmd-cp:hover { color: var(--green); }
+
+    .tip {
+      background: var(--purple-dim); border: 1px solid rgba(139,92,246,0.2);
+      border-radius: var(--rs); padding: 12px 15px; margin-top: 12px;
+      font-size: 13px; color: rgba(232,232,248,0.75);
+      display: flex; gap: 10px; align-items: flex-start; line-height: 1.5;
+    }
+    .tip i { color: var(--purple); flex-shrink: 0; margin-top: 1px; }
+    .tip a { color: var(--purple); text-decoration: none; }
+    .tip a:hover { text-decoration: underline; }
+
+    /* ── Footer ── */
+    .site-footer {
+      margin-top: 32px; font-size: 12px; color: rgba(232,232,248,0.18);
+      animation: fadeUp 0.8s ease 0.2s both;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Responsive ── */
+    @media (max-width: 500px) {
+      .site-title { font-size: 34px; }
+      .tab-btn { font-size: 11.5px; padding: 13px 5px; gap: 5px; }
+      .form-row { grid-template-columns: 1fr; }
+      .tab-panel { padding: 18px; }
+      .run-hint small { display: none; }
+    }
+
+    .pair-home-nav{position:fixed;top:18px;left:18px;z-index:10;display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--border2);border-radius:999px;background:rgba(13,13,26,.82);backdrop-filter:blur(12px);color:var(--text);text-decoration:none;font-size:12px;transition:.2s}.pair-home-nav:hover{color:var(--green);border-color:rgba(0,255,136,.4);transform:translateY(-2px)}
+    @media (max-width:600px){.pair-home-nav{position:static;align-self:flex-start;margin-bottom:16px;font-size:11px}.wrapper{padding-top:18px}}
+  </style>
+<meta name="description" content="CODY AI pairing and deployment console powered by PLOGME."><meta property="og:type" content="website"><meta property="og:site_name" content="PLOGME"><meta property="og:title" content="CODY AI · Pair & Deploy"><meta property="og:description" content="Pair a WhatsApp device, generate a QR code, and deploy CODY AI from the PLOGME console."><meta property="og:image" content="__PUBLIC_URL__/public/og-image.png"><meta property="og:image:type" content="image/png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:url" content="__PUBLIC_URL__/pair"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="CODY AI · Pair & Deploy"><meta name="twitter:description" content="Pair and deploy CODY AI from the PLOGME console."><meta name="twitter:image" content="__PUBLIC_URL__/public/og-image.png"><link rel="manifest" href="/public/manifest.webmanifest"><meta name="theme-color" content="#080810"></head>
+<body><div class="route-blur" id="route-blur"></div><div class="page-progress running" id="page-progress"></div>
+  <div class="bg-glow"></div>
+  <div class="bg-grid"></div>
+
+  <div class="wrapper"><a class="pair-home-nav" href="/"><i class="fas fa-arrow-left"></i><span>Back to PLOGME home</span></a>
+
+    <!-- ── Header ── -->
+    <header class="site-header">
+      <div class="logo-ring"><span class="icon">⚉</span></div>
+      <h1 class="site-title">CODY AI 🜲<span class="version-badge">v2</span></h1>
+      <p class="site-tagline">WhatsApp Bot &mdash; Deploy Suite</p>
+      <div class="social-row">
+        <a href="https://youtube.com/@crysnovax?si=pT8CabQR5BLclPNO" target="_blank" class="soc yt"><i class="fab fa-youtube"></i></a>
+        <a href="https://t.me/CRYSNOVA_AI"                            target="_blank" class="soc tg"><i class="fab fa-telegram-plane"></i></a>
+        <a href="https://sl.crysnovax.link/WHATSAPP"   target="_blank" class="soc wa"><i class="fab fa-whatsapp"></i></a>
+        <a href="https://github.com/crysnovax/CODY"            target="_blank" class="soc gh"><i class="fab fa-github"></i></a>
+      </div>
+    </header>
+
+    <!-- ── Main Card ── -->
+    <div class="main-card">
+
+      <!-- Tab Nav -->
+      <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="pair">
+          <i class="fas fa-link"></i> Pair Device
+        </button>
+        <button class="tab-btn" data-tab="deploy">
+          <i class="fas fa-code"></i> Generate Script
+        </button>
+        <button class="tab-btn" data-tab="guide">
+          <i class="fas fa-book-open"></i> Deploy Guide
+        </button>
+      </nav>
+
+      <!-- ═══════════ TAB: PAIR ═══════════ -->
+      <div class="tab-panel active" id="tab-pair">
+        <div class="sec-label">Link your WhatsApp</div>
+
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="mode-pair"><i class="fas fa-key"></i> Pair Code</button>
+          <button class="mode-btn" id="mode-qr"><i class="fas fa-qrcode"></i> QR Code</button>
+        </div>
+
+        <div class="field" id="pair-num-wrap">
+          <label class="field-label">WhatsApp number <span class="req">*</span></label>
+          <input type="tel" id="pair-number" class="field-input" placeholder="+2348077134210">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Session format</label>
+          <div class="format-choice" id="pair-session-format" role="radiogroup" aria-label="Session format">
+            <button type="button" class="format-option active" data-format="shortid" role="radio" aria-checked="true">
+              <strong>Short ID</strong><small>Cloudflare KV</small>
+            </button>
+            <button type="button" class="format-option" data-format="b64" role="radio" aria-checked="false">
+              <strong>Base64</strong><small>Self-contained</small>
+            </button>
+          </div>
+          <small class="field-help">This controls the session ID sent to WhatsApp and filled into Generate Script.</small>
+        </div>
+
+        <button class="btn-primary" id="pair-btn">
+          <i class="fas fa-key"></i> Generate Pair Code
+        </button>
+
+        <div class="spinner" id="pair-spinner"><i class="fas fa-spinner"></i></div>
+
+        <div class="code-display" id="pair-display">
+          <span class="ph">Your pair code will appear here</span>
+        </div>
+
+        <div class="autofill-note" id="autofill-note"></div>
+
+        <div class="qr-display" id="qr-wrap">
+          <img id="qr-img" src="" alt="QR Code">
+          <p class="qr-hint" id="qr-hint">Scan this QR code with WhatsApp</p>
+        </div>
+
+        <button class="btn-primary" id="copy-code-btn" style="background:var(--surf3);color:var(--text);border:1px solid var(--border2);" onclick="copyPairCode()">
+          <i class="fas fa-copy"></i> Copy Code
+        </button>
+      </div>
+
+      <!-- ═══════════ TAB: DEPLOY GENERATOR ═══════════ -->
+      <div class="tab-panel" id="tab-deploy">
+        <div class="sec-label">Configure your deployment</div>
+
+        <div class="form-row">
+          <div class="field">
+            <label class="field-label">Your name <span class="req">*</span></label>
+            <input type="text" id="d-name" class="field-input" placeholder="e.g. John">
+          </div>
+          <div class="field">
+            <label class="field-label">WhatsApp number <span class="req">*</span></label>
+            <input type="tel" id="d-number" class="field-input" placeholder="2348xxxxxxxxx">
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Session ID <span class="req">*</span></label>
+          <input type="text" id="d-session" class="field-input mono" placeholder="CODY_AI!paste_your_session_here">
+        </div>
+
+        <!-- Advanced -->
+        <button class="adv-btn" id="adv-btn">
+          <i class="fas fa-sliders" style="font-size:11px;"></i> Advanced Options
+          <i class="fas fa-chevron-down adv-chevron" id="adv-chev"></i>
+        </button>
+
+        <div class="adv-section" id="adv-sec">
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label">Bot name</label>
+              <input type="text" id="d-botname" class="field-input" placeholder="CODY AI">
+            </div>
+            <div class="field">
+              <label class="field-label">Command prefix</label>
+              <input type="text" id="d-prefix" class="field-input" placeholder=". or /">
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:14px;">
+            <label class="field-label">Time zone (IANA)</label>
+            <input type="text" id="d-timezone" class="field-input" value="Africa/Lagos" placeholder="America/Toronto">
+            <small>Controls bot-local times and daily schedules. Example: America/Toronto.</small>
+          </div>
+
+          <div class="field" style="margin-bottom:14px;">
+            <label class="field-label">Bot mode</label>
+            <select id="d-mode" class="field-input">
+              <option value="public">public — anyone can use commands</option>
+              <option value="private">private — owner only</option>
+            </select>
+          </div>
+
+          <div class="toggle-row">
+            <div class="tl-label">
+              Auto Read Messages
+              <small>Bot marks messages as read automatically</small>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="d-autoread" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="tl-label">
+              Auto View Statuses
+              <small>Bot automatically views WhatsApp statuses</small>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="d-autostatus">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="tl-label">Always Online<small>Keep the bot presence online</small></div>
+            <label class="switch"><input type="checkbox" id="d-always-online" checked><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="tl-label">Anti-Call<small>Reject incoming WhatsApp calls</small></div>
+            <label class="switch"><input type="checkbox" id="d-anticall"><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="tl-label">Auto Like Status<small>Like viewed statuses</small></div>
+            <label class="switch"><input type="checkbox" id="d-autolike"><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="tl-label">PLOGME auto-replies<small>Enable global private-chat PLOGME mode on first deploy</small></div>
+            <label class="switch"><input type="checkbox" id="d-plogme"><span class="slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="tl-label">Auto-update<small>Update CODY before startup; existing setting is preserved</small></div>
+            <label class="switch"><input type="checkbox" id="d-autoupdate"><span class="slider"></span></label>
+          </div>
+          <div class="field">
+            <label class="field-label">Mention response</label>
+            <select id="d-mention-action" class="field-input"><option value="off">Off</option><option value="react">React</option><option value="text">Text</option></select>
+          </div>
+          <div class="form-row">
+            <div class="field"><label class="field-label">Mention emoji</label><input type="text" id="d-mention-emoji" class="field-input" value="❤️‍🔥"></div>
+            <div class="field"><label class="field-label">Mention text</label><input type="text" id="d-mention-text" class="field-input" value="Busy, back later"></div>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="gen-btn" onclick="generateScript()">
+          <i class="fas fa-wand-magic-sparkles"></i> Generate index.js
+        </button>
+
+        <!-- Output window -->
+        <div class="code-window">
+          <div class="code-titlebar">
+            <div class="code-dots">
+              <div class="dot d-r"></div>
+              <div class="dot d-y"></div>
+              <div class="dot d-g"></div>
+            </div>
+            <span class="code-fname">index.js</span>
+            <div class="code-acts">
+              <button class="btn-sm" id="dl-btn" onclick="downloadScript()" style="display:none;">
+                <i class="fas fa-download"></i> Save
+              </button>
+              <button class="btn-sm" id="copy-script-btn" onclick="copyScript()">
+                <i class="fas fa-copy"></i> Copy
+              </button>
+            </div>
+          </div>
+          <div class="code-body" id="script-body">
+            <div class="code-placeholder">
+              <i class="fas fa-file-code"></i>
+              Fill in your details above, then click<br><strong>Generate index.js</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="run-hint" id="run-hint">
+          <i class="fas fa-terminal"></i>
+          <code>npm start</code>
+          <small>Save the file and run this — that's it.</small>
+        </div>
+      </div>
+
+      <!-- ═══════════ TAB: DEPLOY GUIDE ═══════════ -->
+      <div class="tab-panel" id="tab-guide">
+        <div class="sec-label">Deployment instructions</div>
+
+        <div class="platform-tabs">
+          <button class="p-tab active" data-p="render"><i class="fas fa-cloud"></i> Render</button>
+          <button class="p-tab" data-p="vps"><i class="fas fa-server"></i> VPS / Linux</button>
+          <button class="p-tab" data-p="panel"><i class="fas fa-th-large"></i> Panel</button>
+          <button class="p-tab" data-p="termux"><i class="fas fa-mobile-alt"></i> Termux</button>
+        </div>
+
+        <!-- RENDER -->
+        <div class="p-panel active" id="platform-render">
+          <ol class="steps">
+            <li class="step">
+              <div class="step-n">1</div>
+              <div class="step-body">
+                <div class="step-title">Create a Render account</div>
+                <div class="step-desc">Go to <strong>render.com</strong> and sign up — linking with GitHub makes the next step easier.</div>
+              </div>
+            </li>
+            <li class="step">
+              <div class="step-n">2</div>
+              <div class="step-body">
+                <div class="step-title">New Background Worker</div>
+                <div class="step-desc">Click <strong>New +</strong> → <strong>Background Worker</strong>. Connect your GitHub repo or paste this URL directly:</div>
+                <div class="cmd"><code>https://github.com/crysnovax/CODY</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+              </div>
+            </li>
+            <li class="step">
+              <div class="step-n">3</div>
+              <div class="step-body">
+                <div class="step-title">Set build &amp; start commands</div>
+                <div class="step-desc">In the service settings, configure these two commands:</div>
+                <div class="cmd"><code>npm install</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+                <div class="cmd"><code>npm start</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+              </div>
+            </li>
+            <li class="step">
+              <div class="step-n">4</div>
+              <div class="step-body">
+                <div class="step-title">Add Environment Variables</div>
+                <div class="step-desc">Under the <strong>Environment</strong> tab, add these key-value pairs:</div>
+                <div class="cmd"><code>SESSION_ID</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+                <div class="cmd"><code>OWNER_NUMBER</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+                <div class="cmd"><code>OWNER_NAME</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+                <div class="cmd"><code>BOT_NAME</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+                <div class="cmd"><code>PREFIX</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+                <div class="cmd"><code>MODE</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+                <div class="step-desc" style="margin-top:6px;">💡 Or skip env vars entirely — use the <strong>Generate Script</strong> tab to embed values directly.</div>
+              </div>
+            </li>
+            <li class="step">
+              <div class="step-n">5</div>
+              <div class="step-body">
+                <div class="step-title">Deploy ✅</div>
+                <div class="step-desc">Click <strong>Create Background Worker</strong>. Render will build and launch your bot automatically.</div>
+              </div>
+            </li>
+          </ol>
+          <div class="tip">
+            <i class="fas fa-lightbulb"></i>
+            <span>Free tier Render services spin down after inactivity. For a 24/7 bot, upgrade to a paid plan ($7/mo) or deploy on a VPS instead.</span>
+          </div>
+        </div>
+
+        <!-- VPS -->
+        <div class="p-panel" id="platform-vps">
+          <ol class="steps">
+            <li class="step">
+              <div class="step-n">1</div>
+              <div class="step-body">
+                <div class="step-title">Install Node.js 20, Git &amp; PM2</div>
+                <div class="step-desc">SSH into your server and run this single block:</div>
+                <div class="cmd"><code>curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs git && sudo npm install -g pm2</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+              </div>
+            </li>
+            <li class="step">
+              <div class="step-n">2</div>
+              <div class="step-body">
+                <div class="step-title">Create folder &amp; upload index.js</div>
+                <div class="step-desc">Create a folder for your bot:</div>
+                <div class="cmd"><code>mkdir cody-ai && cd cody-ai</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+                <div class="step-desc" style="margin-top:8px;">Then upload your generated <strong>index.js</strong> using any of these methods:</div>
+                <div class="step-desc" style="margin-top:6px;">• <strong>SFTP</strong> — use FileZilla or Termius file transfer</div>
+                <div class="step-desc">• <strong>cat command</strong> — paste content directly into terminal:</div>
+                <div class="cmd"><code>cat > index.js << 'EOF'
+[paste your index.js content here]
+EOF</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+              </div>
+            </li>
+            <li class="step">
+              <div class="step-n">3</div>
+              <div class="step-body">
+                <div class="step-title">Create package.json</div>
+                <div class="step-desc">Run this to create a minimal package.json:</div>
+                <div class="cmd"><code>echo '{"name":"cody-ai","version":"1.0.0","type":"commonjs","scripts":{"start":"node index.js"}}' > package.json</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+              </div>
+            </li>
+            <li class="step">
+              <div class="step-n">4</div>
+              <div class="step-body">
+                <div class="step-title">Launch with PM2</div>
+                <div class="step-desc">Start the bot and keep it alive 24/7:</div>
+                <div class="cmd"><code>pm2 start index.js --name cody-ai</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+                <div class="cmd"><code>pm2 save && pm2 startup</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+              </div>
+            </li>
+            <li class="step">
+              <div class="step-n">5</div>
+              <div class="step-body">
+                <div class="step-title">Useful PM2 commands</div>
+                <div class="cmd"><code>pm2 logs cody-ai</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+                <div class="cmd"><code>pm2 restart cody-ai</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+                <div class="cmd"><code>pm2 stop cody-ai</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+                <div class="cmd"><code>pm2 delete cody-ai</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+              </div>
+            </li>
+          </ol>
+          <div class="tip">
+            <i class="fas fa-lightbulb"></i>
+            <span>Recommended providers: Oracle Cloud (always free), DigitalOcean, Hetzner, or Contabo. Ubuntu 22.04 LTS works best. Minimum 512MB RAM required.</span>
+          </div>
+        </div>
+
+        <!-- PANEL -->
+        <div class="p-panel" id="platform-panel">
+          <ol class="steps">
+            <li class="step">
+              <div class="step-n">1</div>
+              <div class="step-body">
+                <div class="step-title">Create a Node.js server</div>
+                <div class="step-desc">In your panel (Pterodactyl, Pelican, etc.), create a new server using a <strong>Node.js</strong> egg / template. Set RAM to at least 512 MB.</div>
+              </div>
+            </li>
+            <li class="step">
+              <div class="step-n">2</div>
+              <div class="step-body">
+                <div class="step-title">Upload index.js</div>
+                <div class="step-desc">Use the panel's file manager to upload your generated <strong>index.js</strong> to the server root.</div>
+              </div>
+            </li>
+            <li class="step">
+              <div class="step-n">3</div>
+              <div class="step-body">
+                <div class="step-title">Set the startup command</div>
+                <div class="step-desc">In <strong>Startup</strong> settings, change the start command to:</div>
+                <div class="cmd"><code>npm start</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+              </div>
+            </li>
+            <li class="step">
+              <div class="step-n">4</div>
+              <div class="step-body">
+                <div class="step-title">Power on ✅</div>
+                <div class="step-desc">Click the power button and watch the console. Your bot will install dependencies and go online automatically.</div>
+              </div>
+            </li>
+          </ol>
+          <div class="tip">
+            <i class="fas fa-lightbulb"></i>
+            <span>No Node.js egg available? Ask your host to install one from <a href="https://github.com/parkervcp/eggs" target="_blank">github.com/parkervcp/eggs</a>.</span>
+          </div>
+        </div>
+
+        <!-- TERMUX -->
+        <div class="p-panel" id="platform-termux">
+          <ol class="steps">
+
+            <li class="step">
+              <div class="step-n">1</div>
+              <div class="step-body">
+                <div class="step-title">Update Termux</div>
+                <div class="step-desc">Open Termux and update all packages:</div>
+                <div class="cmd"><code>pkg update -y && pkg upgrade -y</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+              </div>
+            </li>
+
+            <li class="step">
+              <div class="step-n">2</div>
+              <div class="step-body">
+                <div class="step-title">Install Node.js & Git</div>
+                <div class="cmd"><code>pkg install nodejs-lts git -y</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+              </div>
+            </li>
+
+            <li class="step">
+              <div class="step-n">3</div>
+              <div class="step-body">
+                <div class="step-title">Clone CODY AI</div>
+                <div class="cmd"><code>git clone https://github.com/crysnovax/CODY.git</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+                <div class="cmd"><code>cd CODY</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+              </div>
+            </li>
+
+            <li class="step">
+              <div class="step-n">4</div>
+              <div class="step-body">
+                <div class="step-title">Install Dependencies</div>
+                <div class="cmd"><code>npm install</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+              </div>
+            </li>
+
+            <li class="step">
+              <div class="step-n">5</div>
+              <div class="step-body">
+                <div class="step-title">24/7 Session (Recommended)</div>
+                <div class="cmd"><code>pkg install tmux -y</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+                <div class="cmd"><code>tmux new -s cody</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+              </div>
+            </li>
+
+            <li class="step">
+              <div class="step-n">6</div>
+              <div class="step-body">
+                <div class="step-title">Start CODY AI</div>
+                <div class="cmd"><code>npm start</code><button class="cmd-cp" onclick="copyCmd(this)"><i class="fas fa-copy"></i></button></div>
+              </div>
+            </li>
+
+          </ol>
+
+          <div class="tip">
+            <i class="fas fa-lightbulb"></i>
+            <span>Termux does not support sudo commands. Use pkg instead of apt-get. Running inside tmux helps keep the bot alive when the Termux window is closed.</span>
+          </div>
+        </div>
+
+      </div><!-- /tab-guide -->
+    </div><!-- /main-card -->
+
+    <footer class="site-footer">© 2025 crysnovax · CODY AI · All rights reserved</footer>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.0.0-alpha.1/axios.min.js"></script>
+  <script>
+    // ── Session Persistence (survives refresh, not people/devices) ─────
+    const LAST_SESSION_KEY = 'cody_ai_last_session';
+    const LAST_SESSION_TTL_MS = 4 * 60 * 1000; // 4 min — after this, treat it as stale
+
+    function showAutofillNote(text) {
+      const note = document.getElementById('autofill-note');
+      note.innerHTML = `<i class="fas fa-check-circle"></i> ${text}`;
+      note.style.display = 'block';
+    }
+
+    // sessionStorage, not localStorage: scoped to this one tab, wiped the moment
+    // the tab is closed. A refresh keeps it (sessionStorage survives reloads),
+    // but the next person opening a fresh tab on the same device starts clean —
+    // they never inherit whatever the last person paired.
+    function cacheSession(number, sessionId) {
+      try {
+        sessionStorage.setItem(LAST_SESSION_KEY, JSON.stringify({ number, sessionId, ts: Date.now() }));
+      } catch {
+        // sessionStorage unavailable (private mode, quota, etc.) — fields still work, just won't survive a refresh
+      }
+    }
+
+    (function restoreLastSession() {
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(LAST_SESSION_KEY) || 'null');
+        if (!cached) return;
+
+        const expired = !cached.ts || (Date.now() - cached.ts) > LAST_SESSION_TTL_MS;
+        if (expired) {
+          sessionStorage.removeItem(LAST_SESSION_KEY);
+          return;
+        }
+
+        if (cached.number && cached.sessionId) {
+          document.getElementById('d-number').value  = cached.number;
+          document.getElementById('d-session').value = cached.sessionId;
+          showAutofillNote('Restored from your last successful connection');
+        }
+      } catch {
+        // corrupt/unavailable cache — Deploy tab just starts blank, as before
+      }
+    })();
+
+    // ── Main Tab Switching ──────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // ── Pair / QR Toggle ───────────────────────────────────────────────
+    let pairMode = 'pair';
+
+    document.getElementById('mode-pair').addEventListener('click', () => {
+      if (pairMode === 'pair') return;
+      pairMode = 'pair';
+      document.getElementById('mode-pair').classList.add('active');
+      document.getElementById('mode-qr').classList.remove('active');
+      document.getElementById('pair-num-wrap').style.display = '';
+      document.getElementById('pair-btn').style.display = '';
+      document.getElementById('pair-display').style.display = 'flex';
+      document.getElementById('pair-display').innerHTML = '<span class="ph">Your pair code will appear here</span>';
+      document.getElementById('qr-wrap').style.display = 'none';
+    });
+
+    document.getElementById('mode-qr').addEventListener('click', () => {
+      if (pairMode === 'qr') return;
+      pairMode = 'qr';
+      document.getElementById('mode-qr').classList.add('active');
+      document.getElementById('mode-pair').classList.remove('active');
+      document.getElementById('pair-num-wrap').style.display = 'none';
+      document.getElementById('pair-btn').style.display = 'none';
+      document.getElementById('pair-display').style.display = 'none';
+      document.getElementById('qr-wrap').style.display = 'none';
+      fetchQR();
+    });
+
+    // ── Pair Code ──────────────────────────────────────────────────────
+    let statusPollInterval = null;
+
+    // After a pair code or QR is shown, poll for up to 90s to see if the
+    // connection completes. On success, fill Deploy tab fields (still
+    // plain, editable inputs) and stop. Silent on timeout/error — the
+    // WhatsApp "Connection Successful" message is still sent either way,
+    // so manual copy-paste always still works as a fallback.
+    function startStatusPoll(statusUrl) {
+      if (statusPollInterval) clearInterval(statusPollInterval);
+      document.getElementById('autofill-note').style.display = 'none';
+
+      let elapsed = 0;
+      statusPollInterval = setInterval(async () => {
+        elapsed += 3000;
+        if (elapsed >= 90000) {
+          clearInterval(statusPollInterval);
+          statusPollInterval = null;
+          return;
+        }
+        try {
+          const res = await axios(statusUrl);
+          if (res.data.connected) {
+            clearInterval(statusPollInterval);
+            statusPollInterval = null;
+            document.getElementById('d-number').value = res.data.number;
+            document.getElementById('d-session').value = res.data.sessionId;
+            cacheSession(res.data.number, res.data.sessionId);
+            showAutofillNote('Connected — number &amp; Session ID filled in');
+          }
+        } catch {
+          // keep polling — a single failed check isn't fatal
+        }
+      }, 3000);
+    }
+
+    function getSessionFormat() {
+      return document.querySelector('#pair-session-format .format-option.active')?.dataset.format || 'shortid';
+    }
+    document.querySelectorAll('#pair-session-format .format-option').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('#pair-session-format .format-option').forEach(option => {
+          const selected = option === button;
+          option.classList.toggle('active', selected);
+          option.setAttribute('aria-checked', selected ? 'true' : 'false');
+        });
+      });
+    });
+
+    document.getElementById('pair-btn').addEventListener('click', async () => {
+      const num     = document.getElementById('pair-number').value.trim().replace(/[^0-9]/g, '');
+      const display = document.getElementById('pair-display');
+      const spinner = document.getElementById('pair-spinner');
+
+      if (!num) {
+        display.innerHTML = '<span class="err"><i class="fas fa-exclamation-circle"></i> Enter your WhatsApp number</span>';
+        display.style.display = 'flex'; return;
+      }
+
+      if (statusPollInterval) { clearInterval(statusPollInterval); statusPollInterval = null; }
+      document.getElementById('autofill-note').style.display = 'none';
+
+      spinner.style.display = 'block';
+      display.style.display = 'none';
+
+      try {
+        // Pair-code generation is bounded server-side as well; keep the UI
+        // from waiting forever if the upstream WhatsApp handshake stalls.
+        const format = getSessionFormat();
+        const res = await axios.get(`/pair?number=${encodeURIComponent(num)}&format=${encodeURIComponent(format)}`, {
+          timeout: 25000
+        });
+        const code = res.data.code || 'Service Unavailable';
+        if (code === 'Service Unavailable') {
+          display.innerHTML = '<span class="err"><i class="fas fa-exclamation-circle"></i> Service Unavailable</span>';
+        } else {
+          display.innerHTML = `<span class="ok">${code}</span>`;
+          startStatusPoll(`/pair/status?number=${num}`);
+        }
+      } catch (error) {
+        const timedOut = error?.code === 'ECONNABORTED' || error?.message?.toLowerCase().includes('timeout');
+        display.innerHTML = timedOut
+          ? '<span class="err"><i class="fas fa-clock"></i> Pairing timed out — try again</span>'
+          : '<span class="err"><i class="fas fa-exclamation-circle"></i> Error — please try again</span>';
+      } finally {
+        spinner.style.display = 'none';
+        display.style.display = 'flex';
+      }
+    });
+
+    async function fetchQR() {
+      const spinner = document.getElementById('pair-spinner');
+      const display = document.getElementById('pair-display');
+      const qrWrap  = document.getElementById('qr-wrap');
+
+      if (statusPollInterval) { clearInterval(statusPollInterval); statusPollInterval = null; }
+      document.getElementById('autofill-note').style.display = 'none';
+
+      spinner.style.display = 'block';
+      try {
+        const format = getSessionFormat();
+        const res = await axios(`/qr?format=${encodeURIComponent(format)}`);
+        if (res.data.qr) {
+          document.getElementById('qr-img').src = res.data.qr;
+          document.getElementById('qr-hint').textContent =
+            res.data.instructions ? res.data.instructions.join(' · ') : 'Scan with WhatsApp';
+          qrWrap.style.display = 'block';
+          if (res.data.sessionId) {
+            startStatusPoll(`/qr/status?sessionId=${res.data.sessionId}`);
+          }
+        } else {
+          display.innerHTML = '<span class="err"><i class="fas fa-exclamation-circle"></i> Could not load QR</span>';
+          display.style.display = 'flex';
+        }
+      } catch {
+        display.innerHTML = '<span class="err"><i class="fas fa-exclamation-circle"></i> QR error — try again</span>';
+        display.style.display = 'flex';
+      } finally {
+        spinner.style.display = 'none';
+      }
+    }
+
+    async function copyTextToClipboard(text) {
+      const value = String(text ?? '');
+      if (!value) return false;
+      if (window.isSecureContext && navigator.clipboard?.writeText) {
+        try { await navigator.clipboard.writeText(value); return true; } catch {}
+      }
+      const field = document.createElement('textarea');
+      field.value = value;
+      field.setAttribute('readonly', '');
+      field.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;font-size:16px;';
+      document.body.appendChild(field);
+      field.focus();
+      field.select();
+      field.setSelectionRange(0, value.length);
+      let copied = false;
+      try { copied = document.execCommand('copy'); } catch {}
+      field.remove();
+      return copied;
+    }
+
+    function showCopyFeedback(button, copied, successHtml, delay = 1800) {
+      if (!button) return;
+      const original = button.dataset.copyOriginal || button.innerHTML;
+      button.dataset.copyOriginal = original;
+      button.innerHTML = copied ? successHtml : '<i class="fas fa-triangle-exclamation"></i> Copy failed';
+      button.style.color = copied ? 'var(--green)' : 'var(--danger)';
+      button.style.borderColor = copied ? 'var(--green)' : '';
+      clearTimeout(button._copyFeedbackTimer);
+      button._copyFeedbackTimer = setTimeout(() => {
+        button.innerHTML = original;
+        button.style.color = '';
+        button.style.borderColor = '';
+      }, delay);
+    }
+
+    async function copyPairCode() {
+      const text = document.getElementById('pair-display').innerText.trim();
+      if (!text || text.includes('appear here') || text.includes('Error') || text.includes('Unavailable') || text.includes('Enter')) return;
+      const copied = await copyTextToClipboard(text);
+      showCopyFeedback(document.getElementById('copy-code-btn'), copied, '<i class="fas fa-check"></i> Copied!');
+    }
+
+    // ── Advanced Options ───────────────────────────────────────────────
+    document.getElementById('adv-btn').addEventListener('click', () => {
+      const sec  = document.getElementById('adv-sec');
+      const chev = document.getElementById('adv-chev');
+      sec.classList.toggle('open');
+      chev.style.transform = sec.classList.contains('open') ? 'rotate(180deg)' : '';
+    });
+
+    // ── Generate Script (WITH FULL COLOR LOGGER) ───────────────────────
+    let generatedCode = '';
+
+    function generateScript() {
+      const name       = document.getElementById('d-name').value.replace(/[\r\n]+/g, ' ').trim() || 'USER';
+      const number     = document.getElementById('d-number').value.trim()  || '';
+      const session    = document.getElementById('d-session').value.trim() || '';
+      const botname    = document.getElementById('d-botname').value.replace(/[\r\n]+/g, ' ').trim() || 'CODY AI';
+      const prefix     = document.getElementById('d-prefix').value.trim()  || '.';
+      const mode       = document.getElementById('d-mode').value;
+      const autoread   = document.getElementById('d-autoread').checked   ? 'true' : 'false';
+      const autostatus = document.getElementById('d-autostatus').checked ? 'true' : 'false';
+      const alwaysOnline = document.getElementById('d-always-online').checked ? 'true' : 'false';
+      const anticall = document.getElementById('d-anticall').checked ? 'true' : 'false';
+      const autolike = document.getElementById('d-autolike').checked ? 'true' : 'false';
+      const plogme = document.getElementById('d-plogme').checked ? 'true' : 'false';
+      const autoupdate = document.getElementById('d-autoupdate').checked ? 'true' : 'false';
+      const mentionAction = document.getElementById('d-mention-action').value;
+      const mentionEmoji = document.getElementById('d-mention-emoji').value.trim() || '❤️‍🔥';
+      const mentionText = document.getElementById('d-mention-text').value.trim() || 'Busy, back later';
+      const timezone = document.getElementById('d-timezone').value.trim() || 'Africa/Lagos';
+      try { new Intl.DateTimeFormat('en-US', { timeZone: timezone }).format(); }
+      catch { return alert('Enter a valid IANA time zone, such as America/Toronto.'); }
+
+      if (!number || !session || session.includes('paste_your')) {
+        const btn = document.getElementById('gen-btn');
+        btn.style.background = 'var(--danger)';
+        btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Fill in required fields first';
+        setTimeout(() => {
+          btn.style.background = '';
+          btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Generate index.js';
+        }, 2500);
+        return;
+      }
+
+      generatedCode = buildScript({ name, number, session, botname, prefix, mode, autoread, autostatus, alwaysOnline, anticall, autolike, plogme, autoupdate, mentionAction, mentionEmoji, mentionText, timezone });
+
+      const body = document.getElementById('script-body');
+      body.innerHTML = `<pre>${escHtml(generatedCode)}</pre>`;
+      document.getElementById('dl-btn').style.display = '';
+      document.getElementById('run-hint').style.display = 'flex';
+
+      document.getElementById('script-body').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function buildScript({ name, number, session, botname, prefix, mode, autoread, autostatus, alwaysOnline, anticall, autolike, plogme, autoupdate, mentionAction, mentionEmoji, mentionText, timezone }) {
+      return `/**
+ * ╔══════════════════════════════════════╗
+ * ║   C⚉DY AI  ◦  Starter v2            ║
+ * ║   Generated by CODY AI Deploy Builder║
+ * ╚══════════════════════════════════════╝
+ *
+ * Fully configured — just run:  npm start
+ */
+
+import { execSync, spawn } from 'child_process';
+import fs   from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// ─── Colors for beautiful logging ────────────────────────────────────────
+const colors = {
+    reset:     '\\x1b[0m',
+    bright:    '\\x1b[1m',
+    dim:       '\\x1b[2m',
+    black:     '\\x1b[30m',
+    red:       '\\x1b[31m',
+    green:     '\\x1b[32m',
+    yellow:    '\\x1b[33m',
+    blue:      '\\x1b[34m',
+    magenta:   '\\x1b[35m',
+    cyan:      '\\x1b[36m',
+    white:     '\\x1b[37m',
+    bgRed:     '\\x1b[41m',
+    bgGreen:   '\\x1b[42m',
+    bgYellow:  '\\x1b[43m',
+    bgBlue:    '\\x1b[44m',
+    bgMagenta: '\\x1b[45m',
+    bgCyan:    '\\x1b[46m',
+    bold:      '\\x1b[1m',
+    underline: '\\x1b[4m',
+    blink:     '\\x1b[5m',
+    reverse:   '\\x1b[7m'
+};
+
+// ─── Fancy logger with colors ────────────────────────────────────────────
+const log = {
+    header: (msg) => console.log(\`\\n\${colors.bgCyan}\${colors.black}\${colors.bold} ⚡ \${msg} \${colors.reset}\`),
+    success: (msg) => console.log(\`  \${colors.green}\${colors.bold}✓\${colors.reset}  \${colors.green}\${msg}\${colors.reset}\`),
+    error: (msg) => console.log(\`  \${colors.red}\${colors.bold}✗\${colors.reset}  \${colors.red}\${msg}\${colors.reset}\`),
+    warning: (msg) => console.log(\`  \${colors.yellow}\${colors.bold}⚠\${colors.reset}  \${colors.yellow}\${msg}\${colors.reset}\`),
+    info: (msg) => console.log(\`  \${colors.cyan}\${colors.bold}◦\${colors.reset}  \${colors.cyan}\${msg}\${colors.reset}\`),
+    star: (msg) => console.log(\`  \${colors.magenta}\${colors.bold}✦\${colors.reset}  \${colors.magenta}\${msg}\${colors.reset}\`),
+    bot: (msg) => console.log(\`  \${colors.blue}\${colors.bold}🤖\${colors.reset}  \${colors.blue}\${msg}\${colors.reset}\`),
+    line: () => console.log(\`  \${colors.dim}\${'─'.repeat(50)}\${colors.reset}\`),
+    title: (msg) => {
+        const line = '═'.repeat(msg.length + 4);
+        console.log(\`\\n\${colors.yellow}\${colors.bold}╔\${line}╗\${colors.reset}\`);
+        console.log(\`\${colors.yellow}\${colors.bold}║  \${msg}  ║\${colors.reset}\`);
+        console.log(\`\${colors.yellow}\${colors.bold}╚\${line}╝\${colors.reset}\\n\`);
+    },
+    loading: (msg) => {
+        const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+        let i = 0;
+        const interval = setInterval(() => {
+            process.stdout.write(\`\\r  \${colors.cyan}\${frames[i]}\${colors.reset}  \${colors.cyan}\${msg}\${colors.reset}\`);
+            i = (i + 1) % frames.length;
+        }, 80);
+        return interval;
+    },
+    stopLoading: (interval, success = true) => {
+        clearInterval(interval);
+        process.stdout.write('\\r');
+        if (success) {
+            console.log(\`  \${colors.green}✓\${colors.reset}  \${colors.green}Done!\${colors.reset}\`);
+        } else {
+            console.log(\`  \${colors.red}✗\${colors.reset}  \${colors.red}Failed!\${colors.reset}\`);
+        }
+    }
+};
+
+// ─── Embedded config ──────────────────────────────────────────────────────
+const SESSION_ID       = '${session}';
+const OWNER_NUMBER     = '${number}';
+const OWNER_NAME       = ${JSON.stringify(name)};
+const BOT_NAME         = ${JSON.stringify(botname)};
+const PREFIX           = '${prefix}';
+const MODE             = '${mode}';
+const AUTO_READ        = '${autoread}';
+const AUTO_STATUS_VIEW = '${autostatus}';
+const ALWAYS_ONLINE = '${alwaysOnline}';
+const ANTI_CALL = '${anticall}';
+const AUTO_STATUS_LIKE = '${autolike}';
+const PLOGME_ENABLED = '${plogme}';
+const AUTO_UPDATE = '${autoupdate}';
+const MENTION_ACTION = '${mentionAction}';
+const MENTION_EMOJI = '${mentionEmoji}';
+const MENTION_TEXT = '${mentionText}';
+const TIMEZONE = ${JSON.stringify(timezone || 'Africa/Lagos')};
+
+const REPO_URL = 'https://github.com/crysnovax/CODY.git';
+const BOT_DIR  = path.join(__dirname, 'bot');
+
+// ─── Helper: Validate base64 ─────────────────────────────────────────────
+function isValidBase64(str) {
+    try {
+        return btoa(atob(str)) === str;
+    } catch {
+        return false;
+    }
+}
+
+// ─── Helper: Check if already configured ─────────────────────────────────
+function isAlreadyConfigured() {
+    const envPath = path.join(BOT_DIR, '.env');
+    const credsPath = path.join(BOT_DIR, 'sessions', 'creds.json');
+    
+    if (fs.existsSync(envPath) && fs.existsSync(credsPath)) {
+        const envContent = fs.readFileSync(envPath, 'utf8');
+        if (envContent.includes(\`SESSION_ID=\${SESSION_ID}\`) && 
+            envContent.includes(\`OWNER_NUMBER=\${OWNER_NUMBER}\`)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// ─── Session resolver (FULLY FIXED WITH KV SUPPORT) ──────────────────────
+async function resolveSession(sid) {
+    if (!sid) return null;
+
+    // ── CLOUDFLARE KV SHORT ID ──
+    if (sid.includes('!KV:')) {
+        const shortId = sid.split('!KV:').pop();
+        log.info(\`Fetching session from Cloudflare KV (ID: \${shortId})...\`);
+        
+        const loadingInterval = log.loading('Downloading from KV...');
+        
+        try {
+            const res = await fetch(\`https://id.crysnova.qzz.io/session/load/\${shortId}\`);
+            const data = await res.json();
+            
+            clearInterval(loadingInterval);
+            process.stdout.write('\\r');
+            
+            if (data.sessionData) {
+                log.success('Session loaded from Cloudflare KV');
+                return data.sessionData;
+            } else if (data.data) {
+                log.success('Session loaded from Cloudflare KV');
+                return typeof data.data === 'string' ? data.data : JSON.stringify(data.data);
+            } else {
+                log.warning('KV session not found: ' + (data.error || 'unknown'));
+                return null;
+            }
+        } catch (err) {
+            clearInterval(loadingInterval);
+            process.stdout.write('\\r');
+            log.error('KV fetch failed: ' + err.message);
+            return null;
+        }
+    }
+
+    // ── MEGA SESSION ──
+    if (sid.startsWith('CODY_AI!M:')) {
+        log.info('Resolving Mega session...');
+        const megaUrl = sid.slice('CODY_AI!M:'.length);
+        const mega    = await import('megajs');
+        const file    = mega.File.fromURL(megaUrl);
+
+        return new Promise((resolve, reject) => {
+            file.loadAttributes(err => {
+                if (err) return reject(new Error('Mega load failed: ' + err));
+                file.downloadBuffer((err, buf) => {
+                    if (err) return reject(new Error('Mega download: ' + err));
+                    log.success('Session downloaded from Mega');
+                    resolve(buf.toString('utf8'));
+                });
+            });
+        });
+    }
+
+    // ── BASE64 SESSION (with validation) ──
+    log.info('Decoding base64 session...');
+    let b64 = sid;
+    
+    if (sid.includes('!')) {
+        b64 = sid.split('!').pop();
+    }
+    
+    if (isValidBase64(b64)) {
+        const decoded = Buffer.from(b64, 'base64').toString('utf8');
+        if (decoded && decoded.trim().length > 0) {
+            log.success('Base64 session decoded successfully');
+            return decoded;
+        }
+    }
+    
+    log.warning('Invalid or unsupported session format');
+    return null;
+}
+
+// ─── Main ────────────────────────────────────────────────────────────────
+async function main() {
+    console.clear();
+    
+    // Fancy banner
+    console.log(\`\${colors.cyan}\${colors.bold}\`);
+    console.log('   ╔════════════════════════════════════════╗');
+    console.log('   ║     C O D Y   A I   S T A R T E R      ║');
+    console.log('   ║         Version 2.0 | CODY AI          ║');
+    console.log('   ╚════════════════════════════════════════╝');
+    console.log(\`\${colors.reset}\`);
+    
+    log.line();
+    
+    // Check if already configured
+    if (isAlreadyConfigured()) {
+        log.success('Already configured — skipping setup');
+        log.line();
+        log.bot('Launching CODY AI...');
+        log.line();
+        
+        // Launch bot directly without setup
+        const bot = spawn('npm', ['start'], {
+            cwd:   BOT_DIR,
+            stdio: 'inherit',
+            });
+        
+        bot.on('error',  err  => { log.error('Launch failed: ' + err.message); process.exit(1); });
+        bot.on('close', code  => { 
+            if (code === 0) {
+                log.success(\`Bot exited cleanly (code \${code})\`);
+            } else {
+                log.warning(\`Bot exited with code \${code}\`);
+            }
+            process.exit(code ?? 0); 
+        });
+        return;
+    }
+
+    log.info('First time setup — configuring CODY AI...');
+    log.line();
+
+    // 1 — Reuse, update, or clone the bot directory safely.
+    // Never run git clone into a non-empty existing directory.
+    const botDirExists = fs.existsSync(BOT_DIR);
+    const botDirEntries = botDirExists ? fs.readdirSync(BOT_DIR) : [];
+
+    if (fs.existsSync(path.join(BOT_DIR, '.git'))) {
+        log.info('Repository exists — pulling latest changes...');
+        try {
+            execSync('git pull --rebase --autostash', { cwd: BOT_DIR, stdio: 'inherit' });
+            log.success('Git pull completed');
+        } catch {
+            log.warning('Git pull failed — using existing code');
+        }
+    } else if (botDirExists && botDirEntries.length > 0) {
+        log.warning('Bot directory already exists — reusing it without cloning');
+        log.info('Existing files will be preserved and the local configuration will be updated');
+    } else {
+        log.info('Cloning CODY repository...');
+        const loadingInterval = log.loading('Cloning from GitHub...');
+        try {
+            execSync(\`git clone "\${REPO_URL}" "\${BOT_DIR}"\`, { stdio: 'pipe' });
+            clearInterval(loadingInterval);
+            process.stdout.write('\\r');
+            log.success('Repository cloned successfully');
+        } catch (err) {
+            clearInterval(loadingInterval);
+            process.stdout.write('\\r');
+            log.error('Clone failed: ' + err.message);
+            process.exit(1);
+        }
+    }
+
+    fs.mkdirSync(BOT_DIR, { recursive: true });
+
+    // 2 — Write .env into bot folder
+    log.info('Configuring environment variables...');
+    const envContent = [
+        \`SESSION_ID=\${SESSION_ID}\`,
+        \`OWNER_NUMBER=\${OWNER_NUMBER}\`,
+        \`OWNER_NAME=\${JSON.stringify(OWNER_NAME)}\`,
+        \`BOT_NAME=\${JSON.stringify(BOT_NAME)}\`,
+        \`PREFIX=\${PREFIX}\`,
+        \`MODE=\${MODE}\`,
+        \`AUTO_READ=\${AUTO_READ}\`,
+        \`ALWAYS_ONLINE=\${ALWAYS_ONLINE}\`,
+        \`ANTI_CALL=\${ANTI_CALL}\`,
+        \`AUTO_STATUS_VIEW=\${AUTO_STATUS_VIEW}\`,
+        \`AUTO_STATUS_LIKE=\${AUTO_STATUS_LIKE}\`,
+        \`PLOGME_ENABLED=\${PLOGME_ENABLED}\`,
+        \`AUTO_UPDATE=\${AUTO_UPDATE}\`,
+        \`TIMEZONE=\${TIMEZONE}\`,
+        \`MENTION_ACTION=\${MENTION_ACTION}\`,
+        \`MENTION_EMOJI=\${MENTION_EMOJI}\`,
+        \`MENTION_TEXT=\${MENTION_TEXT}\`,
+    ].join('\\n') + '\\n';
+    const envPath = path.join(BOT_DIR, '.env');
+    const existingEnv = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+    const envMap = new Map(existingEnv.split(/\\r?\\n/).filter(Boolean).map(line => {
+        const i = line.indexOf('='); return i > 0 ? [line.slice(0, i), line.slice(i + 1)] : [line, ''];
+    }));
+    // SESSION_ID may refresh; all other generated values are first-run defaults.
+    envMap.set('SESSION_ID', SESSION_ID);
+    for (const line of envContent.trim().split('\\n')) {
+        const i = line.indexOf('='); const key = line.slice(0, i);
+        if (key !== 'SESSION_ID' && !envMap.has(key)) envMap.set(key, line.slice(i + 1));
+    }
+    fs.writeFileSync(envPath, [...envMap].map(([k, v]) => \`\${k}=\${v}\`).join('\\n') + '\\n');
+    log.success('.env file configured');
+    const writeJsonIfMissing = (file, value) => {
+        if (fs.existsSync(file)) return;
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\\n');
+    };
+    writeJsonIfMissing(path.join(BOT_DIR, 'database', 'autoupdate.json'), { enabled: AUTO_UPDATE === 'true' });
+    writeJsonIfMissing(path.join(BOT_DIR, 'database', 'plogme_global_priv.json'), { enabled: PLOGME_ENABLED === 'true' });
+    writeJsonIfMissing(path.join(BOT_DIR, 'database', 'mention_config.json'), {
+        active: MENTION_ACTION !== 'off',
+        action: ['react', 'text'].includes(MENTION_ACTION) ? MENTION_ACTION : '',
+        emoji: MENTION_EMOJI,
+        text: MENTION_TEXT
+    });
+
+    // 3 — Write session credentials
+    log.info('Setting up session credentials...');
+    const credsJson = await resolveSession(SESSION_ID);
+    if (credsJson) {
+        const sessDir = path.join(BOT_DIR, 'sessions');
+        // Safe when the session directory was deleted or already exists.
+        fs.mkdirSync(sessDir, { recursive: true });
+        fs.writeFileSync(path.join(sessDir, 'creds.json'), credsJson, 'utf8');
+        log.success('Session credentials saved');
+    } else {
+        log.warning('No valid session data — bot may request QR code on first run');
+    }
+
+    // 4 — Install dependencies
+    log.info('Installing npm dependencies...');
+    log.line();
+    try {
+        execSync('npm install --progress=false', { cwd: BOT_DIR, stdio: 'inherit' });
+        log.success('Dependencies installed successfully');
+    } catch (err) {
+        log.error('npm install failed: ' + err.message);
+        process.exit(1);
+    }
+
+    // 5 — Launch bot
+    log.line();
+    log.bot('Launching CODY AI...');
+    log.line();
+    console.log(\`\${colors.dim}   Press Ctrl+C to stop the bot\${colors.reset}\\n\`);
+
+    const bot = spawn('npm', ['start'], {
+        cwd:   BOT_DIR,
+        stdio: 'inherit',
+    });
+
+    bot.on('error',  err  => { log.error('Launch failed: ' + err.message); process.exit(1); });
+    bot.on('close', code  => { 
+        log.line();
+        if (code === 0) {
+            log.success(\`Bot exited cleanly (code \${code})\`);
+        } else {
+            log.warning(\`Bot exited with code \${code}\`);
+        }
+        process.exit(code ?? 0); 
+    });
+}
+
+main().catch(err => { 
+    log.error('Fatal error: ' + err.message); 
+    process.exit(1); 
+});
+`;
+    }
+
+    async function copyScript() {
+      if (!generatedCode) return;
+      const copied = await copyTextToClipboard(generatedCode);
+      showCopyFeedback(document.getElementById('copy-script-btn'), copied, '<i class="fas fa-check"></i> Copied!', 2200);
+    }
+
+    function downloadScript() {
+      if (!generatedCode) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([generatedCode], { type: 'text/javascript' }));
+      a.download = 'index.js';
+      a.click();
+    }
+
+    // ── Platform Guide Tabs ────────────────────────────────────────────
+    document.querySelectorAll('.p-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.p-tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.p-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('platform-' + btn.dataset.p).classList.add('active');
+      });
+    });
+
+    // ── Copy Command Block ─────────────────────────────────────────────
+    async function copyCmd(btn) {
+      const code = btn.previousElementSibling.textContent.trim();
+      const copied = await copyTextToClipboard(code);
+      showCopyFeedback(btn, copied, '<i class="fas fa-check"></i>', 1600);
+    }
+  </script>
+<script>(function(){const AudioCtx=window.AudioContext||window.webkitAudioContext;let ac;function tone(freq=560,dur=.06){try{ac=ac||new AudioCtx();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=freq;o.type='sine';g.gain.setValueAtTime(.025,ac.currentTime);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+dur);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+dur)}catch{}}function buzz(ms=18){try{navigator.vibrate?.(ms)}catch{}}document.addEventListener('click',e=>{if(e.target.closest('button,.tab-btn,.mode-btn,.p-tab')){tone();buzz()}});const obs=new MutationObserver(()=>{const d=document.getElementById('pair-display');if(d&&d.querySelector('.ok')){tone(880,.16);buzz([30,40,80])}if(d&&d.querySelector('.err')){tone(170,.18);buzz(120)}});obs.observe(document.body,{subtree:true,childList:true,characterData:true})})();</script><script>window.addEventListener("load",()=>setTimeout(()=>document.getElementById("page-progress")?.classList.replace("running","done"),180));</script><script>const routeBlur=document.getElementById('route-blur');document.addEventListener('click',e=>{const a=e.target.closest('a[href]');if(a&&a.origin===location.origin&&!a.target){routeBlur?.classList.add('active')}});window.addEventListener('pageshow',()=>routeBlur?.classList.remove('active'));</script><script>if("serviceWorker" in navigator)navigator.serviceWorker.register("/public/sw.js").catch(()=>{});</script></body>
+          </html>

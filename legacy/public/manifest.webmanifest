@@ -1,0 +1,10 @@
+{
+  "name": "PLOGME — CRYSN⚉VA AI Operating System",
+  "short_name": "PLOGME",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080810",
+  "theme_color": "#080810",
+  "description": "The PLOGME community operating system for CODY AI and CRYSNOVA AI.",
+  "icons": [{"src":"/public/og-image.png","sizes":"1200x630","type":"image/png","purpose":"any maskable"}]
+}

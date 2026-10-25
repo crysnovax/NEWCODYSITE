@@ -1,0 +1,284 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CRYSNOVA AI Deploy · PLOGME</title><link rel="stylesheet" href="/public.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"><meta name="description" content="PLOGME is the CRYSN⚉VA AI community operating system for CODY, CRYSNOVA AI, deployment, plugins, APIs, and builders."><meta property="og:type" content="website"><meta property="og:site_name" content="PLOGME"><meta property="og:title" content="PLOGME · CRYSN⚉VA AI Community"><meta property="og:description" content="Build with intention. Ship with PLOGME. The community operating system for CODY and CRYSN⚉VA AI."><meta property="og:image" content="__PUBLIC_URL__/public/og-image.png"><meta property="og:image:type" content="image/png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:url" content="__PUBLIC_URL__"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="PLOGME · CRYSN⚉VA AI Community"><meta name="twitter:description" content="The community operating system for CODY and CRYSN⚉VA AI."><meta name="twitter:image" content="__PUBLIC_URL__/public/og-image.png"><link rel="manifest" href="/public/manifest.webmanifest"><meta name="theme-color" content="#080810"></head><body><div class="route-blur" id="route-blur"></div><div class="page-progress running" id="page-progress"></div><div class="layout"><nav class="topbar"><a class="brand" href="/"><span class="brand-mark">⚉</span>PLOGME<em>CRYSNOVA DEPLOY</em></a><div class="nav"><a href="/">Home</a><a href="/crysnova" class="active">CRYSNOVA AI</a><a href="/tutorials">Tutorials</a><a href="/pair">CODY Pair</a></div><div class="live">DEPLOY GUIDE</div></nav><main class="page-enter"><section class="hero"><div class="eyebrow">/ CRYSNOVA AI · deployment kit</div><h1>Deploy <span>CRYSNOVA AI.</span></h1><p>This is the CRYSNOVA AI deployment script, not the CODY pairing console. Copy it into your Pterodactyl panel or local bot folder and follow the interactive setup.</p></section><section class="section split"><div class="card"><div class="eyebrow">Docs</div><h2>🚀 Deployment Instructions</h2><div class="steps"><div class="step"><div><h3>Create a file</h3><p>Create a new file in your Pterodactyl panel or local bot folder.</p></div></div><div class="step"><div><h3>Paste the script</h3><p>Save the script below as <code>index.js</code>.</p></div></div><div class="step"><div><h3>Run the file</h3><code class="code">node index.js</code></div></div><div class="step"><div><h3>Follow the prompts</h3><p>Complete the interactive prompts. Your configuration will be saved automatically.</p></div></div><div class="step"><div><h3>Start the bot</h3><p>Once setup is complete, the CRYSNOVA AI bot starts automatically.</p></div></div></div></div><div class="card deploy-note"><div class="eyebrow">Important</div><h3>For CRYSNOVA AI only</h3><p>Use <strong> /pair </strong> for the unchanged CODY_PAIR console. This page deploys the separate CRYSNOVA_AI repository and its own configuration flow.</p><a class="btn" href="https://github.com/crysnovax/CRYSNOVA_AI" target="_blank"><i class="fab fa-github"></i> View CRYSNOVA_AI</a></div></section><section class="section"><div class="section-head"><div><div class="eyebrow">02 / ready to copy</div><h2>index.js</h2></div><button class="btn primary" onclick="copyScript()"><i class="fas fa-copy"></i> Copy code</button></div><pre id="crysnova-script" class="code deploy-code">const { execSync, spawn } = require(&#x27;child_process&#x27;);
+const fs = require(&#x27;fs&#x27;);
+const path = require(&#x27;path&#x27;);
+const readline = require(&#x27;readline&#x27;);
+
+// Colors (ANSI codes)
+const colors = {
+    reset: &#x27;\x1b[0m&#x27;,
+    bright: &#x27;\x1b[1m&#x27;,
+    dim: &#x27;\x1b[2m&#x27;,
+    black: &#x27;\x1b[30m&#x27;, red: &#x27;\x1b[31m&#x27;, green: &#x27;\x1b[32m&#x27;,
+    yellow: &#x27;\x1b[33m&#x27;, blue: &#x27;\x1b[34m&#x27;, magenta: &#x27;\x1b[35m&#x27;,
+    cyan: &#x27;\x1b[36m&#x27;, white: &#x27;\x1b[37m&#x27;,
+    bgBlack: &#x27;\x1b[40m&#x27;, bgGreen: &#x27;\x1b[42m&#x27;
+};
+
+function c(text, color = &#x27;white&#x27;) {
+    return `${colors[color]}${text}${colors.reset}`;
+}
+
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+function ask(question) {
+    return new Promise((resolve) =&gt; {
+        rl.question(question, (answer) =&gt; resolve(answer.trim()));
+    });
+}
+
+function run(command, cwd = &#x27;.&#x27;) {
+    console.log(c(`[RUN] ${command}`, &#x27;dim&#x27;));
+    try {
+        return execSync(command, { cwd, encoding: &#x27;utf8&#x27;, stdio: &#x27;inherit&#x27; });
+    } catch (error) {
+        console.error(c(`[ERROR] Command failed: ${command}`, &#x27;red&#x27;));
+        throw error;
+    }
+}
+
+// .env helpers
+function readEnv(envPath) {
+    if (!fs.existsSync(envPath)) return {};
+    const map = {};
+    for (const line of fs.readFileSync(envPath, &#x27;utf8&#x27;).split(&#x27;\n&#x27;)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith(&#x27;#&#x27;)) continue;
+        const idx = trimmed.indexOf(&#x27;=&#x27;);
+        if (idx === -1) continue;
+        map[trimmed.slice(0, idx).trim()] = trimmed.slice(idx + 1).trim();
+    }
+    return map;
+}
+
+function writeEnv(envPath, updates) {
+    if (!fs.existsSync(envPath)) {
+        const lines = Object.entries(updates).map(([k, v]) =&gt; `${k}=${v}`).join(&#x27;\n&#x27;);
+        fs.writeFileSync(envPath, lines + &#x27;\n&#x27;);
+        return;
+    }
+    const raw = fs.readFileSync(envPath, &#x27;utf8&#x27;).split(&#x27;\n&#x27;);
+    const seen = new Set();
+    const out = [];
+    for (const line of raw) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith(&#x27;#&#x27;)) { out.push(line); continue; }
+        const idx = trimmed.indexOf(&#x27;=&#x27;);
+        if (idx === -1) { out.push(line); continue; }
+        const k = trimmed.slice(0, idx).trim();
+        seen.add(k);
+        out.push(k in updates ? `${k}=${updates[k]}` : line);
+    }
+    for (const [k, v] of Object.entries(updates)) {
+        if (!seen.has(k)) out.push(`${k}=${v}`);
+    }
+    fs.writeFileSync(envPath, out.join(&#x27;\n&#x27;));
+}
+
+// Check if config is complete
+function isConfigComplete(env) {
+    return env.OWNER_NUMBER &amp;&amp; env.OWNER_NAME &amp;&amp; env.BOT_NAME &amp;&amp;
+           env.OWNER_NUMBER.length &gt;= 10;
+}
+
+// Display banner
+function showBanner() {
+    console.clear();
+    console.log(c(&#x27;\n╔══════════════════════════════════════════════════════════════╗&#x27;, &#x27;cyan&#x27;));
+    console.log(c(&#x27;║                                                              ║&#x27;, &#x27;cyan&#x27;));
+    console.log(c(&#x27;║             &#x27;, &#x27;cyan&#x27;) + c(&#x27;🚀 CRYSNOVA AI V2 — DEPLOY SCRIPT 🚀&#x27;, &#x27;bright&#x27;) + c(&#x27;            ║&#x27;, &#x27;cyan&#x27;));
+    console.log(c(&#x27;║                                                              ║&#x27;, &#x27;cyan&#x27;));
+    console.log(c(&#x27;║         &#x27;, &#x27;cyan&#x27;) + c(&#x27;Automated Setup &amp; Configuration System&#x27;, &#x27;yellow&#x27;) + c(&#x27;              ║&#x27;, &#x27;cyan&#x27;));
+    console.log(c(&#x27;║                                                              ║&#x27;, &#x27;cyan&#x27;));
+    console.log(c(&#x27;╚══════════════════════════════════════════════════════════════╝&#x27;, &#x27;cyan&#x27;));
+    console.log(&#x27;&#x27;);
+}
+
+// Display existing config
+function showExistingConfig(env) {
+    console.log(c(&#x27;┌─────────────────────────────────────────────────────────────┐&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│                                                             │&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│  &#x27;, &#x27;green&#x27;) + c(&#x27;✅ CONFIGURATION FOUND!&#x27;, &#x27;bright&#x27;) + c(&#x27;                                 │&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│                                                             │&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;├─────────────────────────────────────────────────────────────┤&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│                                                             │&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│  &#x27;, &#x27;green&#x27;) + c(`👤 Owner: ${env.OWNER_NAME}`, &#x27;white&#x27;) + &#x27; &#x27;.repeat(Math.max(0, 50 - env.OWNER_NAME.length)) + c(&#x27;│&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│  &#x27;, &#x27;green&#x27;) + c(`📞 Number: ${env.OWNER_NUMBER}`, &#x27;white&#x27;) + &#x27; &#x27;.repeat(Math.max(0, 49 - env.OWNER_NUMBER.length)) + c(&#x27;│&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│  &#x27;, &#x27;green&#x27;) + c(`🤖 Bot: ${env.BOT_NAME}`, &#x27;white&#x27;) + &#x27; &#x27;.repeat(Math.max(0, 52 - env.BOT_NAME.length)) + c(&#x27;│&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│                                                             │&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;└─────────────────────────────────────────────────────────────┘&#x27;, &#x27;green&#x27;));
+    console.log(&#x27;&#x27;);
+    console.log(c(&#x27;🔄 Using existing configuration...\n&#x27;, &#x27;cyan&#x27;));
+}
+
+// Ask for new configuration
+async function askForConfig(envPath) {
+    console.log(c(&#x27;┌─────────────────────────────────────────────────────────────┐&#x27;, &#x27;magenta&#x27;));
+    console.log(c(&#x27;│                                                             │&#x27;, &#x27;magenta&#x27;));
+    console.log(c(&#x27;│  &#x27;, &#x27;magenta&#x27;) + c(&#x27;📋 FIRST TIME SETUP&#x27;, &#x27;bright&#x27;) + c(&#x27;                                     │&#x27;, &#x27;magenta&#x27;));
+    console.log(c(&#x27;│                                                             │&#x27;, &#x27;magenta&#x27;));
+    console.log(c(&#x27;│  &#x27;, &#x27;magenta&#x27;) + c(&#x27;Please provide the following information:&#x27;, &#x27;yellow&#x27;) + c(&#x27;                │&#x27;, &#x27;magenta&#x27;));
+    console.log(c(&#x27;│                                                             │&#x27;, &#x27;magenta&#x27;));
+    console.log(c(&#x27;└─────────────────────────────────────────────────────────────┘&#x27;, &#x27;magenta&#x27;));
+    console.log(&#x27;&#x27;);
+
+    // Owner Number
+    console.log(c(&#x27;┌─────────────────────────────────────────────────────────────┐&#x27;, &#x27;blue&#x27;));
+    console.log(c(&#x27;│ 1. OWNER NUMBER                                             │&#x27;, &#x27;blue&#x27;));
+    console.log(c(&#x27;└─────────────────────────────────────────────────────────────┘&#x27;, &#x27;blue&#x27;));
+    console.log(c(&#x27;   💡 Your WhatsApp number without + (e.g., 2348077528901)&#x27;, &#x27;dim&#x27;));
+    
+    let ownerNumber = await ask(c(&#x27;   Enter: &#x27;, &#x27;yellow&#x27;));
+    while (!ownerNumber || !/^\d{10,15}$/.test(ownerNumber)) {
+        console.log(c(&#x27;   ❌ Invalid! Must be 10-15 digits only&#x27;, &#x27;red&#x27;));
+        ownerNumber = await ask(c(&#x27;   Enter: &#x27;, &#x27;yellow&#x27;));
+    }
+    console.log(c(`   ✓ Number: ${ownerNumber}\n`, &#x27;green&#x27;));
+
+    // Owner Name
+    console.log(c(&#x27;┌─────────────────────────────────────────────────────────────┐&#x27;, &#x27;blue&#x27;));
+    console.log(c(&#x27;│ 2. OWNER NAME                                               │&#x27;, &#x27;blue&#x27;));
+    console.log(c(&#x27;└─────────────────────────────────────────────────────────────┘&#x27;, &#x27;blue&#x27;));
+    console.log(c(&#x27;   💡 Your name or nickname&#x27;, &#x27;dim&#x27;));
+    
+    let ownerName = await ask(c(&#x27;   Enter: &#x27;, &#x27;yellow&#x27;));
+    if (!ownerName) ownerName = &#x27;CRYSNOVA&#x27;;
+    console.log(c(`   ✓ Name: ${ownerName}\n`, &#x27;green&#x27;));
+
+    // Bot Name
+    console.log(c(&#x27;┌─────────────────────────────────────────────────────────────┐&#x27;, &#x27;blue&#x27;));
+    console.log(c(&#x27;│ 3. BOT NAME                                                 │&#x27;, &#x27;blue&#x27;));
+    console.log(c(&#x27;└─────────────────────────────────────────────────────────────┘&#x27;, &#x27;blue&#x27;));
+    console.log(c(&#x27;   💡 Display name for your bot&#x27;, &#x27;dim&#x27;));
+    
+    let botName = await ask(c(&#x27;   Enter: &#x27;, &#x27;yellow&#x27;));
+    if (!botName) botName = &#x27;CRYSNOVA AI V2&#x27;;
+    console.log(c(`   ✓ Bot: ${botName}\n`, &#x27;green&#x27;));
+
+    // Save to .env
+    writeEnv(envPath, {
+        BOT_NAME: botName,
+        OWNER_NUMBER: ownerNumber,
+        OWNER_NUMBERS: ownerNumber,
+        OWNER_NAME: ownerName,
+    });
+
+    // Show success
+    console.log(c(&#x27;┌─────────────────────────────────────────────────────────────┐&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│                                                             │&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│  &#x27;, &#x27;green&#x27;) + c(&#x27;✅ CONFIGURATION SAVED!&#x27;, &#x27;bright&#x27;) + c(&#x27;                                 │&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│                                                             │&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│  &#x27;, &#x27;green&#x27;) + c(`👤 Owner: ${ownerName}`, &#x27;white&#x27;) + &#x27; &#x27;.repeat(Math.max(0, 50 - ownerName.length)) + c(&#x27;│&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│  &#x27;, &#x27;green&#x27;) + c(`📞 Number: ${ownerNumber}`, &#x27;white&#x27;) + &#x27; &#x27;.repeat(Math.max(0, 49 - ownerNumber.length)) + c(&#x27;│&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│  &#x27;, &#x27;green&#x27;) + c(`🤖 Bot: ${botName}`, &#x27;white&#x27;) + &#x27; &#x27;.repeat(Math.max(0, 52 - botName.length)) + c(&#x27;│&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;│                                                             │&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;└─────────────────────────────────────────────────────────────┘&#x27;, &#x27;green&#x27;));
+    console.log(&#x27;&#x27;);
+}
+
+// Main setup function
+async function setupConfiguration() {
+    const envPath = path.join(PROJECT_DIR, &#x27;.env&#x27;);
+    const envExamplePath = path.join(PROJECT_DIR, &#x27;.env.example&#x27;);
+
+    // Create .env from example if doesn&#x27;t exist
+    if (!fs.existsSync(envPath) &amp;&amp; fs.existsSync(envExamplePath)) {
+        fs.copyFileSync(envExamplePath, envPath);
+        console.log(c(&#x27;✓ Created .env from template\n&#x27;, &#x27;green&#x27;));
+    }
+
+    // Read existing config
+    const env = readEnv(envPath);
+
+    // Check if config is complete
+    if (isConfigComplete(env)) {
+        // Auto-use existing config, no questions!
+        showExistingConfig(env);
+        return;
+    }
+
+    // First time or incomplete - ask for config
+    await askForConfig(envPath);
+}
+
+const PROJECT_DIR = &#x27;CRYSNOVA_AI&#x27;;
+const REPO_URL = &#x27;https://github.com/crysnovax/CRYSNOVA_AI.git&#x27;;
+const ENTRY_FILE = &#x27;index.js&#x27;;
+
+async function main() {
+    showBanner();
+    
+    console.log(c(&#x27;═══ STARTING DEPLOYMENT ═══\n&#x27;, &#x27;bright&#x27;));
+
+    // Step 1: Clone
+    if (!fs.existsSync(PROJECT_DIR)) {
+        console.log(c(&#x27;[1/4] 📥 Cloning repository...&#x27;, &#x27;cyan&#x27;));
+        run(`git clone ${REPO_URL} ${PROJECT_DIR}`);
+        console.log(c(&#x27;✓ Cloned!\n&#x27;, &#x27;green&#x27;));
+    } else {
+        console.log(c(&#x27;[1/4] ✓ Repository exists\n&#x27;, &#x27;green&#x27;));
+    }
+
+    // Step 2: Install
+    console.log(c(&#x27;[2/4] 📦 Installing dependencies...&#x27;, &#x27;cyan&#x27;));
+    run(&#x27;npm install&#x27;, PROJECT_DIR);
+    console.log(c(&#x27;✓ Dependencies ready!\n&#x27;, &#x27;green&#x27;));
+
+    // Step 3: Configure (SMART - asks only once!)
+    console.log(c(&#x27;[3/4] ⚙️  Checking configuration...&#x27;, &#x27;cyan&#x27;));
+    await setupConfiguration();
+    rl.close();
+
+    // Step 4: Start
+    console.log(c(&#x27;[4/4] 🚀 Starting bot...&#x27;, &#x27;cyan&#x27;));
+    console.log(&#x27;&#x27;);
+
+    const mainJsPath = path.join(PROJECT_DIR, ENTRY_FILE);
+    const packageJsonPath = path.join(PROJECT_DIR, &#x27;package.json&#x27;);
+    
+    let startCommand, startArgs;
+
+    if (fs.existsSync(mainJsPath)) {
+        startCommand = &#x27;node&#x27;;
+        startArgs = [ENTRY_FILE];
+    } else if (fs.existsSync(packageJsonPath)) {
+        const pkg = JSON.parse(fs.readFileSync(packageJsonPath, &#x27;utf8&#x27;));
+        if (pkg.scripts?.start) {
+            startCommand = &#x27;npm&#x27;;
+            startArgs = [&#x27;start&#x27;];
+        } else {
+            throw new Error(`No ${ENTRY_FILE} or start script found`);
+        }
+    } else {
+        throw new Error(`No ${ENTRY_FILE} found`);
+    }
+
+    console.log(c(&#x27;╔══════════════════════════════════════════════════════════════╗&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;║                                                              ║&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;║             &#x27;, &#x27;green&#x27;) + c(&#x27;🎉 BOT IS STARTING! 🎉&#x27;, &#x27;bright&#x27;) + c(&#x27;                          ║&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;║                                                              ║&#x27;, &#x27;green&#x27;));
+    console.log(c(&#x27;╚══════════════════════════════════════════════════════════════╝&#x27;, &#x27;green&#x27;));
+    console.log(&#x27;&#x27;);
+
+    const child = spawn(startCommand, startArgs, {
+        cwd: PROJECT_DIR,
+        stdio: &#x27;inherit&#x27;,
+        shell: true
+    });
+
+    child.on(&#x27;close&#x27;, (code) =&gt; process.exit(code));
+    child.on(&#x27;error&#x27;, (err) =&gt; {
+        console.error(c(&#x27;Failed to start:&#x27;, &#x27;red&#x27;), err);
+        process.exit(1);
+    });
+}
+
+main().catch(err =&gt; {
+    console.error(c(&#x27;\n❌ FAILED:&#x27;, &#x27;red&#x27;), err.message);
+    rl.close();
+    process.exit(1);
+});
+
+</pre><div id="copy-msg" class="answer"></div></section></main><footer class="footer"><a href="/">Return to PLOGME</a> · <a href="/tutorials">More deployment tutorials</a></footer></div><script>async function copyScript(){const text=document.getElementById('crysnova-script').textContent;const msg=document.getElementById('copy-msg');let copied=false;if(window.isSecureContext&&navigator.clipboard?.writeText){try{await navigator.clipboard.writeText(text);copied=true}catch{}}if(!copied){const field=document.createElement('textarea');field.value=text;field.setAttribute('readonly','');field.style.cssText='position:fixed;left:-9999px;top:0;opacity:0;font-size:16px;';document.body.appendChild(field);field.focus();field.select();field.setSelectionRange(0,text.length);try{copied=document.execCommand('copy')}catch{}field.remove()}msg.textContent=copied?'CRYSNOVA AI index.js copied to clipboard.':'Copy failed. Select the script and copy it manually.'}window.addEventListener('load',()=>setTimeout(()=>document.getElementById('page-progress')?.classList.replace('running','done'),180));</script><script>const routeBlur=document.getElementById('route-blur');document.addEventListener('click',e=>{const a=e.target.closest('a[href]');if(a&&a.origin===location.origin&&!a.target){routeBlur?.classList.add('active')}});window.addEventListener('pageshow',()=>routeBlur?.classList.remove('active'));</script><script>if("serviceWorker" in navigator)navigator.serviceWorker.register("/public/sw.js").catch(()=>{});</script></body></html>

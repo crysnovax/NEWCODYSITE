@@ -1,0 +1,214 @@
+import express from 'express';
+import fs from 'fs';
+import pino from 'pino';
+import { makeWASocket, useMultiFileAuthState, delay, makeCacheableSignalKeyStore, Browsers, jidNormalizedUser, fetchLatestBaileysVersion } from '@crysnovax/baileys';
+import pn from 'awesome-phonenumber';
+import { uploadSession } from './id.js';
+
+const router = express.Router();
+
+function removeFile(FilePath) {
+    try {
+        if (!fs.existsSync(FilePath)) return false;
+        fs.rmSync(FilePath, { recursive: true, force: true });
+    } catch (e) {
+        console.error('Error removing file:', e);
+    }
+}
+
+const retryAttempts = new Map();
+
+router.get('/', async (req, res) => {
+    let num = req.query.number;
+    let dirs = './' + (num || `session`);
+
+    await removeFile(dirs);
+
+    num = num.replace(/[^0-9]/g, '');
+
+    const phone = pn('+' + num);
+    if (!phone.isValid()) {
+        if (!res.headersSent) {
+            return res.status(400).send({ code: 'Invalid phone number' });
+        }
+        return;
+    }
+    num = phone.getNumber('e164').replace('+', '');
+
+    if (!retryAttempts.has(num)) {
+        retryAttempts.set(num, 0);
+    }
+
+    async function initiateSession(isRetry = false) {
+        const { state, saveCreds } = await useMultiFileAuthState(dirs);
+
+        try {
+            const { version, isLatest } = await fetchLatestBaileysVersion();
+            let CodyAI = makeWASocket({
+                version,
+                auth: {
+                    creds: state.creds,
+                    keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
+                },
+                printQRInTerminal: false,
+                logger: pino({ level: "fatal" }).child({ level: "fatal" }),
+                browser: Browsers.windows('Chrome'),
+                markOnlineOnConnect: false,
+                generateHighQualityLinkPreview: false,
+                defaultQueryTimeoutMs: 30000,
+                connectTimeoutMs: 30000,
+                keepAliveIntervalMs: 30000,
+                retryRequestDelayMs: 250,
+                maxRetries: 5,
+            });
+
+            let messagesSent = false;
+
+            CodyAI.ev.on('connection.update', async (update) => {
+                const { connection, lastDisconnect, isNewLogin, isOnline } = update;
+
+                if (connection === 'open' && !messagesSent) {
+                    messagesSent = true;
+                    console.log("✅ Connected successfully!");
+
+                    try {
+                        const sessionCody = fs.readFileSync(dirs + '/creds.json');
+                        const sessionData = sessionCody.toString('utf8');
+                        const sessionBase64 = Buffer.from(sessionCody).toString('base64');
+                        
+                        const userJid = jidNormalizedUser(num + '@s.whatsapp.net');
+                        
+                        const uploadResult = await uploadSession(sessionData, num);
+                        
+                        let sessionIdText = '';
+                        let copyIdText = '';
+
+                        if (uploadResult) {
+                            sessionIdText = uploadResult.fullId;
+                            copyIdText = uploadResult.fullId;
+                            console.log("📦 Short ID:", uploadResult.shortId);
+                        } else {
+                            sessionIdText = `CODY_AI!${sessionBase64}`;
+                            copyIdText = `CODY_AI!${sessionBase64}`;
+                            console.log("🔐 Base64 session");
+                        }
+
+                        // ONE message: image + caption + copy button
+                        await CodyAI.sendMessage(userJid, {
+                            image: { url: 'https://cdn.crysnovax.link/files/1778949575159-68cdc357-92f3-4065-a62e-0385710bb260.jpeg' },
+                            caption: `╭─❍ *C⚉DY AI* 🜲\n│\n│ ✓ *Connection Successful!*\n│\n│ 👤 *Your Number:* 📱 +${num}\n│\n│ 🔑 *Session ID:* ${sessionIdText}\n│\n│ 💬 *Quick Setup:*\n│ ➊ Tap "Copy Session ID" below\n│ ➋ Add to your .env file\n│ ➌ Run: node index.js\n│\n│ 🎬 *Full Guide:* youtu.be/7TJ400demag?si=Xb8QwdwuVlTUOu7U\n│\n│ 💫 *Channel:* whatsapp.com/channel/0029Vb6pe77K0IBn48HLKb38\n│\n│ ✑ *Community:* sl.crysnovax.link/WHATSAPP\n│\n│ 🔖 *GitHub:* github.com/crysnovax/CODY\n│\n╰──────────────────\n\n🏷️ *Do not share this file with anybody!*\n\n©2025 CODY AI • crysnovax`,
+                            nativeFlow: [{
+                                text: '📋 Copy Session ID',
+                                copy: copyIdText
+                            }]
+                        });
+
+                        console.log("🎬 Tutorial with Session ID sent");
+
+                        console.log("🧹 Cleaning up local session...");
+                        await delay(1000);
+                        removeFile(dirs);
+                        retryAttempts.delete(num);
+                        console.log("✅ Session cleaned up successfully");
+                        
+                        if (CodyAI.ws) {
+                            CodyAI.ws.close();
+                        }
+                        
+                    } catch (error) {
+                        console.error("❌ Error sending messages:", error);
+                        removeFile(dirs);
+                    }
+                }
+
+                if (isNewLogin) {
+                    console.log("🔐 New login via pair code");
+                }
+
+                if (isOnline) {
+                    console.log("📶 Client is online");
+                }
+
+                if (connection === 'close') {
+                    const statusCode = lastDisconnect?.error?.output?.statusCode;
+                    const currentRetries = retryAttempts.get(num) || 0;
+
+                    if (statusCode === 401) {
+                        console.log("❌ Logged out from WhatsApp. Need to generate new pair code.");
+                        retryAttempts.delete(num);
+                    } else if (currentRetries < 1 && !messagesSent) {
+                        const newRetryCount = currentRetries + 1;
+                        retryAttempts.set(num, newRetryCount);
+                        console.log(`🔁 Retry attempt ${newRetryCount}/1 – restarting connection...`);
+                        await delay(3000);
+                        initiateSession(true);
+                    } else {
+                        console.log("🔁 Connection closed – stopping.");
+                        retryAttempts.delete(num);
+                        if (!res.headersSent && !messagesSent) {
+                            res.status(503).send({ code: 'Connection failed. Please try again.' });
+                        }
+                    }
+                }
+            });
+
+            if (!CodyAI.authState.creds.registered) {
+                await delay(3000);
+                num = num.replace(/[^\d+]/g, '');
+                if (num.startsWith('+')) num = num.substring(1);
+
+                try {
+                    let code = await CodyAI.requestPairingCode(num, 'CRYSNOVA');
+                    console.log('🔗 Pairing code sent for:', num);
+                    if (!res.headersSent) {
+                        await res.send({ code: code });
+                    }
+                } catch (error) {
+                    console.error('Error requesting pairing code:', error);
+                    if (!res.headersSent) {
+                        res.status(503).send({ code: 'Failed to get pairing code. Please try again.' });
+                    }
+                }
+            }
+
+            CodyAI.ev.on('creds.update', saveCreds);
+            
+            setTimeout(() => {
+                if (!messagesSent && !res.headersSent) {
+                    console.log("⏰ Timeout – no connection established");
+                    res.status(408).send({ code: 'Connection timeout. Please try again.' });
+                    removeFile(dirs);
+                    retryAttempts.delete(num);
+                }
+            }, 60000);
+
+        } catch (err) {
+            console.error('Error initializing session:', err);
+            if (!res.headersSent) {
+                res.status(503).send({ code: 'Service Unavailable' });
+            }
+            removeFile(dirs);
+            retryAttempts.delete(num);
+        }
+    }
+
+    await initiateSession();
+});
+
+process.on('uncaughtException', (err) => {
+    let e = String(err);
+    if (e.includes("conflict")) return;
+    if (e.includes("not-authorized")) return;
+    if (e.includes("Socket connection timeout")) return;
+    if (e.includes("rate-overlimit")) return;
+    if (e.includes("Connection Closed")) return;
+    if (e.includes("Timed Out")) return;
+    if (e.includes("Value not found")) return;
+    if (e.includes("Stream Errored")) return;
+    if (e.includes("Stream Errored (restart required)")) return;
+    if (e.includes("statusCode: 515")) return;
+    if (e.includes("statusCode: 503")) return;
+    console.log('Caught exception: ', err);
+});
+
+export default router;
